@@ -1,0 +1,18 @@
+body {
+  font-family: monospace;
+}
+#writer {
+  width: 700px;
+  height: 400px;
+  vertical-align: top;
+  display: inline-block;
+}
+#debug {
+  width: 600px;
+  height: 500px;
+  display: inline-block;
+  background: #f5a3a3;
+  color: #fff;
+  box-shadow: 0px 0px 10px #808080;
+  overflow: scroll;
+}
