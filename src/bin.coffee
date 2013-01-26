@@ -17,14 +17,14 @@ Array::remove = (value) ->
       self.push thing
   self
 
-arr$ = (x) -> x instanceof Array
-str$ = (x) -> typeof x is 'string'
-num$ = (x) ->
-  rule1 = typeof x is 'number'
-  rule2 = Number.isNaN x
-  rule1 and (not rule2)
-obj$ = (x) -> x instanceof Object
-fun$ = (x) -> x instanceof Function
+toType = (x) ->
+  ret = ({}).toString.call(x).match /\s([a-zA-Z]+)/
+  ret[1].toLowerCase()
+arr$ = (x) -> (toType x) is 'array'
+str$ = (x) -> (toType x) is 'string'
+num$ = (x) -> (toType x) is 'number'
+obj$ = (x) -> (toType x) is 'object'
+fun$ = (x) -> (toType x) is 'function'
 
 path = require 'path'
 fs = require 'fs'
