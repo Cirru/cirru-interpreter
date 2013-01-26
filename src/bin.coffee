@@ -17,9 +17,12 @@ Array::remove = (value) ->
       self.push thing
   self
 
-str$ = (x) -> x instanceof String
 arr$ = (x) -> x instanceof Array
-num$ = (x) -> x instanceof Number
+str$ = (x) -> typeof x is 'string'
+num$ = (x) ->
+  rule1 = typeof x is 'number'
+  rule2 = Number.isNaN x
+  rule1 and (not rule2)
 obj$ = (x) -> x instanceof Object
 fun$ = (x) -> x instanceof Function
 
@@ -28,6 +31,9 @@ fs = require 'fs'
 log = ->
   console.log '\n\n'
   console.log arguments...
+util = require 'util'
+puts = util.print
+
 parser = require 'cirru-parser'
 
 has_content = (list) -> list.length > 0
@@ -44,7 +50,9 @@ note = ->
 source_path = path.join process.env.PD, process.argv[2]
 watching_files = []
 
+# scopes are mainly for functions
 scope_prototype =
+  # outer scope is the scope the function runs
   outer: {}
   outer_set: (dest) -> @outer = dest
   outer_find: (key) ->
@@ -53,6 +61,7 @@ scope_prototype =
     else
       @outer.outer_find key
 
+  # prototype, just like OOP
   proto: {}
   proto_set: (dest) -> @proto = dest
   proto_find: (key) ->
@@ -61,6 +70,7 @@ scope_prototype =
     else
       @proto.proto_find? key
 
+  # the parent Node when an object assigned to another
   root: {}
   root_set: (dest) -> @root = dest
   root_find: (key) ->
@@ -69,9 +79,9 @@ scope_prototype =
     else
       @root.root_find? key
 
+  # value and normal parent scopes
   parent: {}
   parent_set: (dest) -> @parent = dest
-
   value:
     '@': @proto
     '#': @outer
@@ -108,8 +118,74 @@ read = (table, scope) ->
       head
 
 boots =
+  # echo prints anything passed to it
   echo: (body, scope) -> log body...
+
+  # for [key], get one value from scope by 'key'
+  get: (body, scope) ->
+    key = body.head
+    if arr$ key
+      read key, scope
+    else if num$ (Number key)
+      # log 'number', key
+      Number key
+    else if str$ key
+      scope.value_find key
+    else
+      throw new Error "Cant get #{key}"
+
+  # set a key-value pair at scope.value
   set: (body, scope) ->
+    log 'set started'
+    key = body.shift()
+    value_name = body.shift()
+    scope.value_set key, (boots.get [value_name], scope)
+
+  # read value by key and print them
+  print: (body, scope) ->
+    # log 'print started'
+    log ''
+    body.forEach (key) ->
+      # log 'trying to print', key
+      ret = boots.get [key], scope
+      # log 'ret:: ', ret
+      puts (JSON.stringify ret, null, 2)
+      puts '\t'
+
+  # generate string with JSON.stringify
+  string: (body, scope) ->
+    body.map(JSON.stringify).join ' '
+
+  # get back string or an expression
+  word: (body, scope) ->
+    key = body.shift()
+    if str$ key
+      key
+    else if arr$ key
+      read key, scope
+    else
+      throw new throw "what could #{key} be?"
+
+  # phrase: eval if there are arrays
+  phrase: (body, scope) ->
+    body.map((key) -> boots.word [key], scope).join ' '
+
+  # generate list by reading from scope
+  array: (body, scope) ->
+    body.map((key) -> boots.get [key], scope)
+
+  # a key-value map
+  table: (body, scope) ->
+    log 'createing table', body
+    value = {}
+    while body.head?
+      pair = body.shift()
+      key_name = pair.shift()
+      value_name = pair.shift()
+      key = boots.word [key_name], scope
+      value[key] = boots.get [value_name], scope
+    log 'table created:', value
+    value
 
 run = (source_filename) ->
   source = fs.readFileSync source_filename, 'utf8'
