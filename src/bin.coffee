@@ -22,7 +22,10 @@ toType = (x) ->
   ret[1].toLowerCase()
 arr$ = (x) -> (toType x) is 'array'
 str$ = (x) -> (toType x) is 'string'
-num$ = (x) -> (toType x) is 'number'
+num$ = (x) ->
+  rule1 = (toType x) is 'number'
+  rule2 = Number.isNaN x
+  rule1 and (not rule2)
 obj$ = (x) -> (toType x) is 'object'
 fun$ = (x) -> (toType x) is 'function'
 
@@ -88,21 +91,23 @@ scope_prototype =
     '!': @parent
   value_set: (key, value) -> @value[key] = value
   value_find: (key) ->
+    log 'try finding', key
     if @value[key]?
       @value[key]
     else
-      @parent.parent_find? key
+      log 'finding', key
+      @parent.parent_find key
 
 create_scope = (scope) ->
   child =
-    __proto__: scope_prototype
+    __proto__: scope
     parent: scope
     proto: scope
     outer: scope
     root: scope
 
 read = (table, scope) ->
-  log 'reading::', table, scope
+  log 'reading::', table
 
   head = scope.value_find table.head
   body = table.body
@@ -127,7 +132,7 @@ boots =
     if arr$ key
       read key, scope
     else if num$ (Number key)
-      # log 'number', key
+      log 'number', key
       Number key
     else if str$ key
       scope.value_find key
@@ -146,9 +151,9 @@ boots =
     # log 'print started'
     log ''
     body.forEach (key) ->
-      # log 'trying to print', key
+      log 'trying to print', key
       ret = boots.get [key], scope
-      # log 'ret:: ', ret
+      log 'ret:: ', ret
       puts (JSON.stringify ret, null, 2)
       puts '\t'
 
@@ -176,7 +181,7 @@ boots =
 
   # a key-value map
   table: (body, scope) ->
-    log 'createing table', body
+    log 'creating table', body
     value = {}
     while body.head?
       pair = body.shift()
@@ -187,6 +192,31 @@ boots =
     log 'table created:', value
     value
 
+  # define a function
+  '^': (body, scope) ->
+    params = body.shift()
+    make_fun = (inputs, outer_scope) ->
+      log 'creating inner_scope'
+      inner_scope = create_scope scope
+      if params.filled
+        key = params.shift()
+        key_name = inputs.shift()
+        value = boots.get [key_name], outer_scope
+        inner_scope.value_set key, value
+        inner_scope.outer_set outer_scope
+        inner_scope.proto_set outer_scope
+        make_fun inputs, inner_scope
+      else
+        ret = undefined
+        body.forEach (expression) ->
+          ret = read expression, inner_scope
+        log 'we have ret:', ret
+        ret
+
+  '*': (body, scope) ->
+    list = body.map (key) -> boots.get [key], scope
+    list.reduce (x, y) -> x * y
+
 run = (source_filename) ->
   source = fs.readFileSync source_filename, 'utf8'
 
@@ -194,7 +224,7 @@ run = (source_filename) ->
   tree = tree.filter has_content
   log 'tree:', tree
 
-  global_scope = create_scope {}
+  global_scope = create_scope scope_prototype
   global_scope.value = boots
   tree.forEach (line) -> read line, global_scope
 
