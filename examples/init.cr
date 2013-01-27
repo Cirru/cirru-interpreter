@@ -1,4 +1,11 @@
 
-set a (^ (x) (* x 3))
 
-print (a 4)
+set a
+  :
+    a 2
+    c (string c)
+    d
+      :
+        a b
+
+print (a d)

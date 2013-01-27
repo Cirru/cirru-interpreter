@@ -85,12 +85,19 @@ read = (table, scope) ->
   if arr$ head
     head = read head, scope
   if fun$ head
-    head body, scope
-  else
-    if body.filled
-      head[body]
-    else
-      head
+    return head body, scope
+  else if obj$ head
+    if head.__proto__ is scope_prototype
+      if body.head?
+        key = body.shift()
+        key_name = boots.word [key], scope
+        head = boots.get [key_name], scope
+        if body.filled?
+          head
+        else
+          body.unshift head
+          read body, scope
+  return head
 
 boots =
   # echo prints anything passed to it
@@ -149,19 +156,6 @@ boots =
   # generate list by reading from scope
   array: (body, scope) ->
     body.map((key) -> boots.get [key], scope)
-
-  # a key-value map
-  'table': (body, scope) ->
-    log 'creating table', body
-    value = {}
-    while body.head?
-      pair = body.shift()
-      key_name = pair.shift()
-      value_name = pair.shift()
-      key = boots.word [key_name], scope
-      value[key] = boots.get [value_name], scope
-    log 'table created:', value
-    value
 
   # table but with scopes
   ':': (body, scope) ->
