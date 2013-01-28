@@ -1,9 +1,5 @@
 
-Array::__defineGetter__ 'head', -> @[0]
-Array::__defineSetter__ 'head', (value) -> @[0] = value
-
 Array::__defineGetter__ 'body', -> @[1..]
-Array::__defineGetter__ 'filled', -> @length > 0
 
 Array::__defineGetter__ 'last', -> @[@.length-1]
 Array::__defineSetter__ 'last', (value) -> @[@.length-1] = value
@@ -41,20 +37,32 @@ parser = require 'cirru-parser'
 
 has_content = (list) -> list.length > 0
 
-all_notes = []
-process.on 'exit', -> log all_notes
-note = ->
-  log arguments
-  for key, value of arguments
-    unless value in all_notes
-      all_notes.push value
-  log arguments...
+# format JS data types for output
+format = (data) ->
+  item = data.value
+  if str$ item
+    ret = "\"#{item}\""
+  else if arr$ item
+    list = item.map (key) ->
+      # log 'mapping', key
+      format key.value
+    ret = "[#{list.join ','}]"
+  else if obj$ item
+    json = []
+    for key, value of item
+      unless key in ['parent', 'outer', 'root', 'value']
+        json.push "#{key}:#{format value}"
+    ret = "{#{json.join ', '}}"
+  else if fun$ item
+    ret = '[Function]'
+  else
+    ret = String item
+  ret
 
 source_path = path.join process.env.PD, process.argv[2]
-watching_files = []
 
 # scopes are mainly for functions
-scope_prototype =
+prototype =
   # outer scope is the scope the function runs
   outer: {}
   outer_set: (dest) -> @outer = dest
@@ -66,136 +74,158 @@ scope_prototype =
   # value and normal parent scopes
   parent: {}
   parent_set: (dest) -> @parent = dest
+
+  # store real value here
   value: {}
   value_set: (key, value) -> @value[key] = value
   value_find: (key) ->
-    log 'try finding', key
+    log 'try finding', key, @value
     if @value[key]?
       @value[key]
     else
       log 'finding', key
       @parent.value_find key
 
-read = (table, scope) ->
-  log 'reading::', table
+  # type of both data and value
+  type: 'scope'
 
-  head = scope.value_find table.head
-  body = table.body
-  log 'head:', table.head, head, body
-  if arr$ head
-    head = read head, scope
-  if fun$ head
-    return head body, scope
-  else if obj$ head
-    if head.__proto__ is scope_prototype
-      if body.head?
+  # core function which evals all code
+  read: (exp) ->
+    log 'reading:', exp
+    head = if str$ exp[0] then (@get exp[0]) else (@read exp[0])
+    log 'head:', head
+    body = exp.body
+    if fun$ head
+      log 'function:', head
+      self = @
+      head body, @
+    else
+      while body[0]?
         key = body.shift()
-        key_name = boots.word [key], scope
-        head = boots.get [key_name], scope
-        if body.filled?
-          head
-        else
-          body.unshift head
-          read body, scope
-  return head
+        log 'here key', key
+        head = head.get key
+      head
+
+  # get string value from scope
+  word: (key) ->
+    if str$ key
+      key
+    else if arr$ key
+      @read key
+
+  # get value from scope
+  get: (key) ->
+    log 'trying to get', key
+    if arr$ key
+      log 'got array:', key
+      @read key
+    else if num$ (Number key)
+      log 'number', key
+      num_obj =
+        __proto__: prototype
+        value: Number key
+        type: 'number'
+    else if str$ key
+      # log 'str$', key, @
+      @value_find key
 
 boots =
   # echo prints anything passed to it
-  echo: (body, scope) -> puts body..., '\n'
+  echo: (body, scope) -> log (format body)
 
   # for [key], get one value from scope by 'key'
-  get: (body, scope) ->
-    key = body.head
-    if arr$ key
-      read key, scope
-    else if num$ (Number key)
-      log 'number', key
-      Number key
-    else if str$ key
-      scope.value_find key
-    else
-      throw new Error "Cant get #{key}"
+  get: (body, scope) -> scope.get body[0]
+
+  # get back string or an expression
+  word: (body, scope) -> word body[0], value
+
+  # read data directly and the function to return
+  read: (body, scope) -> scope.read body
+  raw: (body, scope) ->
+    log 'raw:', body[0]
+    {type: 'array', value: body[0]}
 
   # set a key-value pair at scope.value
   set: (body, scope) ->
-    log 'set started'
-    key = body.shift()
-    value_name = body.shift()
-    scope.value_set key, (boots.get [value_name], scope)
+    log 'set started', body
+    value = scope.get body[1]
+    log 'value', value
+    scope.value_set body[0], value
 
   # read value by key and print them
   print: (body, scope) ->
     # log 'print started'
-    log ''
     body.forEach (key) ->
-      log 'trying to print', key
-      ret = boots.get [key], scope
-      log 'ret:: ', ret
-      puts ret
-      puts '\t'
-    puts '\n'
+      ret = scope.get key
+      log 'ret', ret
+      log (format ret)
 
   # generate string with JSON.stringify
   string: (body, scope) ->
-    body.map(JSON.stringify).join ' '
-
-  # get back string or an expression
-  word: (body, scope) ->
-    key = body.shift()
-    if str$ key
-      key
-    else if arr$ key
-      read key, scope
-    else
-      throw new throw "what could #{key} be?"
+    ret =
+      type: 'string'
+      value: body.map(String).join ' '
 
   # phrase: eval if there are arrays
   phrase: (body, scope) ->
-    body.map((key) -> boots.word [key], scope).join ' '
+    list = body.map (key) -> scope.word key
+    value = list.map (key) ->
+      if obj$ key
+        if obj$ key.value
+          JSON.stringify key.value
+        else
+          key.value
+      else
+        key
+    log 'phrase:', value
+    ret =
+      type: 'string'
+      value: value.join ' '
 
   # generate list by reading from scope
   array: (body, scope) ->
-    body.map((key) -> boots.get [key], scope)
+    body.map((key) -> scope.get key)
 
   # table but with scopes
   ':': (body, scope) ->
+    log 'table:', body
     inner_scope = create_scope scope
-    while body.head
+    while body[0]?
       pair = body.shift()
-      key_name = pair.shift()
-      key = boots.word [key_name], inner_scope
-      value_name = pair.shift()
-      value = boots.get [value_name], inner_scope
-      inner_scope.value_set key, value
-    log 'table with scope:', inner_scope.value
-    inner_scope.value
+      log 'pair', pair
+      value = inner_scope.get pair[1]
+      inner_scope.value_set pair[0], value
+    log 'table with scope:', inner_scope
+    inner_scope
 
   # define a function
   '^': (body, scope) ->
+    log 'lambda:', body
     params = body.shift()
     if str$ params then params = [params]
-    make_fun = (inputs, outer_scope) ->
+    (inputs, outer_scope) ->
       log 'creating inner_scope'
-      do ret_fun = (inputs, scope) ->
-        inner_scope = create_scope scope
-        if params.filled
-          key = params.shift()
-          key_name = inputs.shift()
-          value = boots.get [key_name], outer_scope
-          inner_scope.value_set key, value
-          inner_scope.outer_set scope.outer
-          ret_fun inputs, inner_scope
-        else
-          ret = undefined
-          body.forEach (expression) ->
-            log 'the expression', expression, inner_scope
-            ret = read expression, inner_scope
-          log 'we have ret:', ret
-          ret
+      inner_scope = create_scope scope
+      inner_scope.outer_set scope.outer
+      params.forEach (key, index) ->
+        key = scope.word key
+        value = outer_scope.get inputs[index]
+        inner_scope.value_set key, value
+        log 'params set:', key, value
+      ret = undefined
+      log 'the body part:', body
+      body.forEach (exp) ->
+        log 'the exp', exp, inner_scope
+        ret = inner_scope.read exp
+      log 'we have ret:', ret
+      ret
 
   '*': (body, scope) ->
-    list = body.map (key) -> boots.get [key], scope
-    list.reduce (x, y) -> x * y
+    list = body.map (key) -> scope.get key
+    list.reduce (x, y) ->
+      ret =
+        type: 'number'
+        value: x.value * y.value
 
 # the most outside scope
 space_scope =
@@ -205,17 +235,14 @@ space_scope =
 
 create_scope = (scope) ->
   child =
-    __proto__: scope_prototype
+    __proto__: prototype
     parent: scope
-    root: scope.value
-    outer: scope.value
-
-  child.value =
-    outer: child.outer
-    parent: child.parent
-    root: child.root
-
-  child.value.value = child.value
+    root: scope
+    outer: scope
+    value:
+      outer: scope
+      parent: scope
+      root: scope
 
   child
 
@@ -229,7 +256,7 @@ run = (source_filename) ->
   global_scope = create_scope space_scope
   global_scope.value = boots
   # log 'reading global_scope', space_scope
-  tree.forEach (line) -> read line, global_scope
+  tree.forEach (line) -> global_scope.read line
 
 run source_path
 fs.watchFile source_path, interval: 100, ->
