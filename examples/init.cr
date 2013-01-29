@@ -1,7 +1,27 @@
 
+print (string function start)
 
 set b
-  ^ ()
-    get x
+  ^ (x)
+    print outer
+    print self
+    print parent
 
-print (b)
+b 1
+
+print (string next function)
+
+set c
+  :
+    a (string b)
+    f
+      ^ y
+        print outer
+        print self
+        print parent
+
+(c f) 2
+
+print (string end with)
+
+print c

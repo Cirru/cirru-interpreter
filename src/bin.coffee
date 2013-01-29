@@ -28,8 +28,9 @@ fun$ = (x) -> (toType x) is 'function'
 path = require 'path'
 fs = require 'fs'
 log = ->
-  console.log '\n\n'
-  console.log arguments...
+  # console.log '\n\n'
+  # console.log arguments...
+show = console.log
 util = require 'util'
 puts = util.print
 
@@ -39,32 +40,22 @@ has_content = (list) -> list.length > 0
 
 # format JS data types for output
 format = (data) ->
-  log 'formating:', data
+  # log 'formating:', data
   unless data?
     'undefined'
   else if data.raw?
-    item = data.raw
-    if str$ item
-      ret = "\"#{item}\""
-    else if arr$ item
-      list = item.map (key) ->
-        # log 'mapping', key
-        format key.value
-      ret = "[#{list.join ','}]"
-    else if obj$ item
-      json = []
-      for key, value of item
-        unless key in ['parent', 'outer', 'root', 'value']
-          json.push "#{key}:#{format value}"
-      ret = "{#{json.join ', '}}"
-    else if fun$ item
-      ret = '[Function]'
-    else
-      ret = String item
-    log 'format ret:', item, ret
+    if fun$ data.raw
+      '[function]'
+    data.raw
+  else
+    ret = {}
+    for key, value of data.value
+      if key in ['parent', 'outer', 'self']
+        value = {}
+      if obj$ value
+        value = format value
+      ret[key] = value
     ret
-  else if data.value?
-    JSON.stringify data.value
 
 source_path = path.join process.env.PD, process.argv[2]
 
@@ -74,10 +65,6 @@ prototype =
   outer: {}
   outer_set: (dest) -> @outer = dest
 
-  # the parent Node when an object assigned to another
-  root: {}
-  root_set: (dest) -> @root = dest
-
   # value and normal parent scopes
   parent: {}
   parent_set: (dest) -> @parent = dest
@@ -86,8 +73,8 @@ prototype =
   value: {}
   value_set: (key, value) ->
     @value[key] = value
-    if value.root?
-      value.root = @
+    if value.outer?
+      @outer_set @
   value_find: (key) ->
     log 'try finding', key, @value
     if @value[key]?
@@ -98,6 +85,9 @@ prototype =
 
   # type of both data and value
   type: 'scope'
+
+  # if it has value, just be raw value
+  raw: undefined
 
   # core function which evals all code
   read: (exp) ->
@@ -189,10 +179,8 @@ boots =
     type: 'function'
     raw: (body, scope) ->
       # log 'print started'
-      body.forEach (key) ->
-        ret = scope.get key
-        log 'ret', ret
-        log (format ret)
+      body = body.map (key) -> format (scope.get key)
+      show body...
 
   # generate string with JSON.stringify
   string:
@@ -289,19 +277,19 @@ boots =
 # the most outside scope
 space_scope =
   proto_find: -> null
-  root_find: -> null
   value_find: (key) -> boots[key]
+  value: boots
 
 create_scope = (scope) ->
   child =
     __proto__: prototype
     parent: scope
-    root: scope
     outer: scope
     value:
       outer: scope
       parent: scope
-      root: scope
+
+  child.value.self = child
 
   child
 
@@ -313,7 +301,6 @@ run = (source_filename) ->
   log 'tree:', tree
 
   global_scope = create_scope space_scope
-  global_scope.value = boots
   # log 'reading global_scope', space_scope
   tree.forEach (line) -> global_scope.read line
 
