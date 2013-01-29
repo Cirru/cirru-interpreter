@@ -274,6 +274,19 @@ boots =
           type: 'number'
           raw: x.raw * y.raw
 
+  'char':
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      maps =
+        newline: '\n'
+        left_bracket: '('
+        right_bracket: ')'
+      ret =
+        __proto__: prototype
+        type: 'string'
+        raw: maps[body[0]]
+
 # the most outside scope
 space_scope =
   proto_find: -> null
