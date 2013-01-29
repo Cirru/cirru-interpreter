@@ -39,25 +39,32 @@ has_content = (list) -> list.length > 0
 
 # format JS data types for output
 format = (data) ->
-  item = data.value
-  if str$ item
-    ret = "\"#{item}\""
-  else if arr$ item
-    list = item.map (key) ->
-      # log 'mapping', key
-      format key.value
-    ret = "[#{list.join ','}]"
-  else if obj$ item
-    json = []
-    for key, value of item
-      unless key in ['parent', 'outer', 'root', 'value']
-        json.push "#{key}:#{format value}"
-    ret = "{#{json.join ', '}}"
-  else if fun$ item
-    ret = '[Function]'
-  else
-    ret = String item
-  ret
+  log 'formating:', data
+  unless data?
+    'undefined'
+  else if data.raw?
+    item = data.raw
+    if str$ item
+      ret = "\"#{item}\""
+    else if arr$ item
+      list = item.map (key) ->
+        # log 'mapping', key
+        format key.value
+      ret = "[#{list.join ','}]"
+    else if obj$ item
+      json = []
+      for key, value of item
+        unless key in ['parent', 'outer', 'root', 'value']
+          json.push "#{key}:#{format value}"
+      ret = "{#{json.join ', '}}"
+    else if fun$ item
+      ret = '[Function]'
+    else
+      ret = String item
+    log 'format ret:', item, ret
+    ret
+  else if data.value?
+    JSON.stringify data.value
 
 source_path = path.join process.env.PD, process.argv[2]
 
@@ -77,7 +84,10 @@ prototype =
 
   # store real value here
   value: {}
-  value_set: (key, value) -> @value[key] = value
+  value_set: (key, value) ->
+    @value[key] = value
+    if value.root?
+      value.root = @
   value_find: (key) ->
     log 'try finding', key, @value
     if @value[key]?
@@ -95,14 +105,14 @@ prototype =
     head = if str$ exp[0] then (@get exp[0]) else (@read exp[0])
     log 'head:', head
     body = exp.body
-    if fun$ head
-      log 'function:', head
+    if fun$ head.raw
+      log 'function:', head.raw
       self = @
-      head body, @
+      head.raw body, @
     else
       while body[0]?
         key = body.shift()
-        log 'here key', key
+        log 'here key', key, head
         head = head.get key
       head
 
@@ -123,109 +133,158 @@ prototype =
       log 'number', key
       num_obj =
         __proto__: prototype
-        value: Number key
         type: 'number'
+        raw: Number key
     else if str$ key
       # log 'str$', key, @
       @value_find key
 
 boots =
   # echo prints anything passed to it
-  echo: (body, scope) -> log (format body)
+  echo:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) -> log (format body)
 
   # for [key], get one value from scope by 'key'
-  get: (body, scope) -> scope.get body[0]
+  get:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) -> scope.get body[0]
 
   # get back string or an expression
-  word: (body, scope) -> word body[0], value
+  word:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) -> scope.word body[0]
 
   # read data directly and the function to return
-  read: (body, scope) -> scope.read body
-  raw: (body, scope) ->
-    log 'raw:', body[0]
-    {type: 'array', value: body[0]}
+  read:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) -> scope.read body
+  data:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      log 'data:', body[0]
+      ret =
+        __proto__: prototype
+        type: 'array'
+        raw: body[0]
 
   # set a key-value pair at scope.value
-  set: (body, scope) ->
-    log 'set started', body
-    value = scope.get body[1]
-    log 'value', value
-    scope.value_set body[0], value
+  set:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      log 'set started', body
+      value = scope.get body[1]
+      log 'value', value
+      scope.value_set body[0], value
 
   # read value by key and print them
-  print: (body, scope) ->
-    # log 'print started'
-    body.forEach (key) ->
-      ret = scope.get key
-      log 'ret', ret
-      log (format ret)
+  print:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      # log 'print started'
+      body.forEach (key) ->
+        ret = scope.get key
+        log 'ret', ret
+        log (format ret)
 
   # generate string with JSON.stringify
-  string: (body, scope) ->
-    ret =
-      type: 'string'
-      value: body.map(String).join ' '
+  string:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      ret =
+        __proto__: prototype
+        type: 'string'
+        raw: body.map(String).join ' '
 
   # phrase: eval if there are arrays
-  phrase: (body, scope) ->
-    list = body.map (key) -> scope.word key
-    value = list.map (key) ->
-      if obj$ key
-        if obj$ key.value
-          JSON.stringify key.value
+  phrase:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      list = body.map (key) -> scope.word key
+      value = list.map (key) ->
+        if obj$ key
+          if obj$ key.value
+            JSON.stringify key.value
+          else
+            key.value
         else
-          key.value
-      else
-        key
-    log 'phrase:', value
-    ret =
-      type: 'string'
-      value: value.join ' '
+          key
+      log 'phrase:', value
+      ret =
+        __proto__: prototype
+        type: 'string'
+        raw: value.join ' '
 
   # generate list by reading from scope
-  array: (body, scope) ->
-    body.map((key) -> scope.get key)
+  array:
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      body.map((key) -> scope.get key)
 
   # table but with scopes
-  ':': (body, scope) ->
-    log 'table:', body
-    inner_scope = create_scope scope
-    while body[0]?
-      pair = body.shift()
-      log 'pair', pair
-      value = inner_scope.get pair[1]
-      inner_scope.value_set pair[0], value
-    log 'table with scope:', inner_scope
-    inner_scope
+  ':':
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      log 'table:', body
+      inner_scope = create_scope scope
+      while body[0]?
+        pair = body.shift()
+        log 'pair', pair
+        value = inner_scope.get pair[1]
+        inner_scope.value_set pair[0], value
+      log 'table with scope:', inner_scope
+      inner_scope
 
   # define a function
-  '^': (body, scope) ->
-    log 'lambda:', body
-    params = body.shift()
-    if str$ params then params = [params]
-    (inputs, outer_scope) ->
-      log 'creating inner_scope'
-      inner_scope = create_scope scope
-      inner_scope.outer_set scope.outer
-      params.forEach (key, index) ->
-        key = scope.word key
-        value = outer_scope.get inputs[index]
-        inner_scope.value_set key, value
-        log 'params set:', key, value
-      ret = undefined
-      log 'the body part:', body
-      body.forEach (exp) ->
-        log 'the exp', exp, inner_scope
-        ret = inner_scope.read exp
-      log 'we have ret:', ret
-      ret
+  '^':
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      log 'lambda:', body
+      params = body.shift()
+      if str$ params then params = [params]
+      f = (inputs, outer_scope) ->
+        log 'creating inner_scope'
+        inner_scope = create_scope scope
+        inner_scope.outer_set scope.outer
+        params.forEach (key, index) ->
+          key = scope.word key
+          value = outer_scope.get inputs[index]
+          inner_scope.value_set key, value
+          log 'params set:', key, value
+        ret = undefined
+        log 'the body part:', body
+        body.forEach (exp) ->
+          log 'the exp', exp, inner_scope
+          ret = inner_scope.read exp
+        log 'we have ret:', ret
+        ret
+      data =
+        __proto__: prototype
+        type: 'function'
+        raw: f
 
-  '*': (body, scope) ->
-    list = body.map (key) -> scope.get key
-    list.reduce (x, y) ->
-      ret =
-        type: 'number'
-        value: x.value * y.value
+  '*':
+    __proto__: prototype
+    type: 'function'
+    raw: (body, scope) ->
+      list = body.map (key) -> scope.get key
+      list.reduce (x, y) ->
+        ret =
+          __proto__: prototype
+          type: 'number'
+          raw: x.raw * y.raw
 
 # the most outside scope
 space_scope =

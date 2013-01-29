@@ -1,11 +1,7 @@
 
 
-set a
-  :
-    a 2
-    c (string c)
-    d
-      :
-        a b
+set b
+  ^ ()
+    get x
 
-print (a d)
+print (b)
