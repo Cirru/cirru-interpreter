@@ -31,8 +31,9 @@ show = console.log
 util = require 'util'
 puts = util.print
 
+delay = (t, f) -> setTimeout f, t
 log = -> console.log '\n', arguments...
-# log = -> # toggle
+log = -> # toggle
 
 parser = require 'cirru-parser'
 
@@ -41,13 +42,16 @@ has_content = (list) -> list.length > 0
 # format JS data types for output
 format = (data, history=[]) ->
   log 'formating:', data
-  show data
+  # show data
   unless data?
     'undefined'
+  else if fun$ data
+    ->
   else if data.raw?
     if fun$ data.raw
-      '[function]'
-    data.raw
+      ->
+    else
+      data.raw
   else
     ret = {}
     for key, value of data.value
@@ -71,8 +75,8 @@ prototype =
   # store real value here
   value:
     parent: {tag: 'prototype'}
-    self: {tag: 'prototype'}
     outer: {tag: 'prototype'}
+    self: {tag: 'prototype'}
   search: (key) ->
     log 'searching:', key, @
     if @value[key]?
@@ -96,14 +100,13 @@ prototype =
   # core function which evals all code
   read: (exp) ->
     try
-      log 'reading:', exp
+      log 'reading:', exp, @
       head = if str$ exp[0] then (@get exp[0]) else (@read exp[0])
       body = exp.body
       log 'read:', head, body
-      if fun$ head.raw
+      if fun$ head
         log 'function:', head
-        head.value.outer = @value.outer
-        head.raw body, @
+        head body, @
       else if obj$ head.value
         while body[0]?
           key = body.shift()
@@ -143,33 +146,18 @@ prototype =
 # functions for self-bootstrap
 prototype.value = boots =
   # echo prints anything passed to it
-  echo:
-    __proto__: prototype
-    type: 'function'
-    raw: (body, scope) -> log (format body)
+  echo: (body, scope) -> log (format body)
 
   # for [key], get one value from scope by 'key'
-  get:
-    __proto__: prototype
-    type: 'function'
-    raw: (body, scope) -> scope.get body[0]
+  get: (body, scope) -> scope.get body[0]
 
   # get back string or an expression
-  word:
-    __proto__: prototype
-    type: 'function'
-    raw: (body, scope) -> scope.word body[0]
+  word: (body, scope) -> scope.word body[0]
 
   # read data directly and the function to return
-  read:
-    __proto__: prototype
-    type: 'function'
-    raw: (body, scope) -> scope.read body
+  read: (body, scope) -> scope.read body
 
-  data:
-    __proto__: prototype
-    type: 'function'
-    raw: (body, scope) ->
+  data: (body, scope) ->
       log 'data:', body[0]
       ret =
         __proto__: prototype
@@ -177,41 +165,30 @@ prototype.value = boots =
         raw: body[0]
 
   # set a key-value pair at scope.value
-  set:
-    __proto__: prototype
-    type: 'function'
-    raw: (body, scope) ->
+  set: (body, scope) ->
       log 'set started', body, scope
       value = scope.get body[1]
       log 'value', value
       unless scope.value? then scope.value = {}
       scope.value[body[0]] = value
+      value.value.outer = scope
       log 'set value outer_set', value.value.outer
 
   # read value by key and print them
-  print:
-    __proto__: prototype
-    type: 'function'
-    raw: (body, scope) ->
+  print: (body, scope) ->
       # log 'print started'
       body = body.map (key) -> format (scope.get key)
       show body...
 
   # generate string with JSON.stringify
-  string:
-    __proto__: prototype
-    type: 'function'
-    raw: (body, scope) ->
+  string: (body, scope) ->
       ret =
         __proto__: prototype
         type: 'string'
         raw: body.map(String).join ' '
 
   # phrase: eval if there are arrays
-  phrase:
-    __proto__: prototype
-    type: 'function'
-    raw: (body, scope) ->
+  phrase: (body, scope) ->
       list = body.map (key) -> scope.word key
       value = list.map (key) ->
         if obj$ key
@@ -229,19 +206,11 @@ prototype.value = boots =
         tag: 'phrase'
 
   # generate list by reading from scope
-  array:
-    __proto__: prototype
-    type: 'function'
-    tag: 'array'
-    raw: (body, scope) ->
+  array: (body, scope) ->
       body.map((key) -> scope.get key)
 
   # table but with scopes
-  ':':
-    __proto__: prototype
-    type: 'function'
-    tag: 'by :'
-    raw: (body, scope) ->
+  ':': (body, scope) ->
       log 'table:', body
       inner_scope = create_scope scope
       inner_scope.value.outer = scope
@@ -254,15 +223,11 @@ prototype.value = boots =
       inner_scope
 
   # define a function
-  '^':
-    __proto__: prototype
-    type: 'function'
-    tag: 'by ^'
-    raw: (body, scope) ->
+  '^': (body, scope) ->
       log 'lambda:', body
       params = body.shift()
       if str$ params then params = [params]
-      f = (inputs, outer_scope) ->
+      (inputs, outer_scope) ->
         inner_scope = create_scope scope
         inner_scope.value.outer = outer_scope
         inner_scope.tag = 'inner_scope'
@@ -279,17 +244,8 @@ prototype.value = boots =
           ret = inner_scope.read exp
         log 'f ret:', ret
         ret
-      data =
-        __proto__: prototype
-        type: 'function'
-        tag: 'ret ^'
-        raw: f
 
-  '*':
-    __proto__: prototype
-    type: 'function'
-    tag: 'by *'
-    raw: (body, scope) ->
+  '*': (body, scope) ->
       list = body.map (key) -> scope.get key
       list.reduce (x, y) ->
         ret =
@@ -297,11 +253,7 @@ prototype.value = boots =
           type: 'number'
           raw: x.raw * y.raw
 
-  char:
-    __proto__: prototype
-    type: 'function'
-    tag: 'char'
-    raw: (body, scope) ->
+  char: (body, scope) ->
       maps =
         newline: '\n'
         left_bracket: '('
@@ -311,11 +263,7 @@ prototype.value = boots =
         type: 'string'
         value: maps[body[0]]
 
-  comment:
-    __proto__: prototype
-    tag: 'comment'
-    type: 'function'
-    raw: ->
+  comment: ->
 
 create_scope = (scope) ->
   child =
@@ -348,5 +296,7 @@ run = (source_filename) ->
   tree.forEach (line) -> global_scope.read line
 
 run source_path
+fs.unwatchFile source_path
 fs.watchFile source_path, interval: 100, ->
-  run source_path
+  show '\nReloading...\n'
+  delay 500, -> run source_path
