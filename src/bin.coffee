@@ -27,20 +27,21 @@ fun$ = (x) -> (toType x) is 'function'
 
 path = require 'path'
 fs = require 'fs'
-log = ->
-  # console.log '\n\n'
-  # console.log arguments...
 show = console.log
 util = require 'util'
 puts = util.print
+
+log = -> console.log '\n', arguments...
+# log = -> # toggle
 
 parser = require 'cirru-parser'
 
 has_content = (list) -> list.length > 0
 
 # format JS data types for output
-format = (data) ->
-  # log 'formating:', data
+format = (data, history=[]) ->
+  log 'formating:', data
+  show data
   unless data?
     'undefined'
   else if data.raw?
@@ -52,59 +53,69 @@ format = (data) ->
     for key, value of data.value
       if key in ['parent', 'outer', 'self']
         value = {}
-      if obj$ value
-        value = format value
+      else if obj$ value
+        if value in history
+          value = {}
+        else
+          if (obj$ value) and (value.type is 'scope')
+            history.push value
+          value = format value, history
       ret[key] = value
+    log 'format ret:', ret
     ret
 
-source_path = path.join process.env.PD, process.argv[2]
+source_path = path.join process.env.PWD, process.argv[2]
 
 # scopes are mainly for functions
 prototype =
-  # outer scope is the scope the function runs
-  outer: {}
-  outer_set: (dest) -> @outer = dest
-
-  # value and normal parent scopes
-  parent: {}
-  parent_set: (dest) -> @parent = dest
-
   # store real value here
-  value: {}
-  value_set: (key, value) ->
-    @value[key] = value
-    if value.outer?
-      @outer_set @
-  value_find: (key) ->
-    log 'try finding', key, @value
+  value:
+    parent: {tag: 'prototype'}
+    self: {tag: 'prototype'}
+    outer: {tag: 'prototype'}
+  search: (key) ->
+    log 'searching:', key, @
     if @value[key]?
       @value[key]
     else
-      log 'finding', key
-      @parent.value_find key
+      log 'search:', key, @value
+      if @value.parent?
+        @value.parent.search key
+      else
+        undefined
 
   # type of both data and value
   type: 'scope'
 
-  # if it has value, just be raw value
-  raw: undefined
+  # if it is value, then it has method
+  method: {}
+
+  # tag oof id
+  tag: 'prototype'
 
   # core function which evals all code
   read: (exp) ->
-    log 'reading:', exp
-    head = if str$ exp[0] then (@get exp[0]) else (@read exp[0])
-    log 'head:', head
-    body = exp.body
-    if fun$ head.raw
-      log 'function:', head.raw
-      self = @
-      head.raw body, @
-    else
-      while body[0]?
-        key = body.shift()
-        log 'here key', key, head
-        head = head.get key
-      head
+    try
+      log 'reading:', exp
+      head = if str$ exp[0] then (@get exp[0]) else (@read exp[0])
+      body = exp.body
+      log 'read:', head, body
+      if fun$ head.raw
+        log 'function:', head
+        head.value.outer = @value.outer
+        head.raw body, @
+      else if obj$ head.value
+        while body[0]?
+          key = body.shift()
+          # log 'here key', key, head
+          head = head.get key
+        head
+      else
+        head.method[body[0]]
+    catch err
+      line = exp.line + 1
+      show "Error at #{line}:\t", @code[exp.line]
+      throw err
 
   # get string value from scope
   word: (key) ->
@@ -126,10 +137,11 @@ prototype =
         type: 'number'
         raw: Number key
     else if str$ key
-      # log 'str$', key, @
-      @value_find key
+      log 'get string:', key, @
+      @search key
 
-boots =
+# functions for self-bootstrap
+prototype.value = boots =
   # echo prints anything passed to it
   echo:
     __proto__: prototype
@@ -153,6 +165,7 @@ boots =
     __proto__: prototype
     type: 'function'
     raw: (body, scope) -> scope.read body
+
   data:
     __proto__: prototype
     type: 'function'
@@ -168,10 +181,12 @@ boots =
     __proto__: prototype
     type: 'function'
     raw: (body, scope) ->
-      log 'set started', body
+      log 'set started', body, scope
       value = scope.get body[1]
       log 'value', value
-      scope.value_set body[0], value
+      unless scope.value? then scope.value = {}
+      scope.value[body[0]] = value
+      log 'set value outer_set', value.value.outer
 
   # read value by key and print them
   print:
@@ -200,10 +215,10 @@ boots =
       list = body.map (key) -> scope.word key
       value = list.map (key) ->
         if obj$ key
-          if obj$ key.value
+          if obj$ key.raw
             JSON.stringify key.value
           else
-            key.value
+            key.raw
         else
           key
       log 'phrase:', value
@@ -211,11 +226,13 @@ boots =
         __proto__: prototype
         type: 'string'
         raw: value.join ' '
+        tag: 'phrase'
 
   # generate list by reading from scope
   array:
     __proto__: prototype
     type: 'function'
+    tag: 'array'
     raw: (body, scope) ->
       body.map((key) -> scope.get key)
 
@@ -223,14 +240,16 @@ boots =
   ':':
     __proto__: prototype
     type: 'function'
+    tag: 'by :'
     raw: (body, scope) ->
       log 'table:', body
       inner_scope = create_scope scope
+      inner_scope.value.outer = scope
       while body[0]?
         pair = body.shift()
         log 'pair', pair
         value = inner_scope.get pair[1]
-        inner_scope.value_set pair[0], value
+        inner_scope.value[pair[0]] = value
       log 'table with scope:', inner_scope
       inner_scope
 
@@ -238,34 +257,38 @@ boots =
   '^':
     __proto__: prototype
     type: 'function'
+    tag: 'by ^'
     raw: (body, scope) ->
       log 'lambda:', body
       params = body.shift()
       if str$ params then params = [params]
       f = (inputs, outer_scope) ->
-        log 'creating inner_scope'
         inner_scope = create_scope scope
-        inner_scope.outer_set scope.outer
+        inner_scope.value.outer = outer_scope
+        inner_scope.tag = 'inner_scope'
         params.forEach (key, index) ->
           key = scope.word key
           value = outer_scope.get inputs[index]
-          inner_scope.value_set key, value
+          inner_scope.value[key] = value
           log 'params set:', key, value
         ret = undefined
+        log 'creating inner_scope', inner_scope.value.outer
         log 'the body part:', body
         body.forEach (exp) ->
-          log 'the exp', exp, inner_scope
+          log 'the exp', exp
           ret = inner_scope.read exp
-        log 'we have ret:', ret
+        log 'f ret:', ret
         ret
       data =
         __proto__: prototype
         type: 'function'
+        tag: 'ret ^'
         raw: f
 
   '*':
     __proto__: prototype
     type: 'function'
+    tag: 'by *'
     raw: (body, scope) ->
       list = body.map (key) -> scope.get key
       list.reduce (x, y) ->
@@ -274,9 +297,10 @@ boots =
           type: 'number'
           raw: x.raw * y.raw
 
-  'char':
+  char:
     __proto__: prototype
     type: 'function'
+    tag: 'char'
     raw: (body, scope) ->
       maps =
         newline: '\n'
@@ -285,22 +309,21 @@ boots =
       ret =
         __proto__: prototype
         type: 'string'
-        raw: maps[body[0]]
+        value: maps[body[0]]
 
-# the most outside scope
-space_scope =
-  proto_find: -> null
-  value_find: (key) -> boots[key]
-  value: boots
+  comment:
+    __proto__: prototype
+    tag: 'comment'
+    type: 'function'
+    raw: ->
 
 create_scope = (scope) ->
   child =
     __proto__: prototype
-    parent: scope
-    outer: scope
     value:
-      outer: scope
       parent: scope
+      outer: scope.value.outer
+    tag: 'create_scope' + scope.tag
 
   child.value.self = child
 
@@ -311,9 +334,16 @@ run = (source_filename) ->
 
   {tree, code} = parser.parse source
   tree = tree.filter has_content
-  log 'tree:', tree
+  # log 'tree:', tree
+  prototype.code = code
 
-  global_scope = create_scope space_scope
+  global_scope =
+    __proto__: prototype
+    tag: 'global_scope'
+    value:
+      outer: prototype
+      parent: prototype
+  global_scope.value.self = global_scope
   # log 'reading global_scope', space_scope
   tree.forEach (line) -> global_scope.read line
 
