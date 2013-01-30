@@ -33,7 +33,7 @@ puts = util.print
 
 delay = (t, f) -> setTimeout f, t
 log = -> console.log '\n', arguments...
-log = -> # toggle
+# log = -> # toggle
 
 parser = require 'cirru-parser'
 
@@ -91,9 +91,6 @@ prototype =
   # type of both data and value
   type: 'scope'
 
-  # if it is value, then it has method
-  method: {}
-
   # tag oof id
   tag: 'prototype'
 
@@ -139,6 +136,15 @@ prototype =
         __proto__: prototype
         type: 'number'
         raw: Number key
+        value:
+          string: ->
+            ret =
+              type: 'string'
+              raw: String key
+          succeed: ->
+            ret =
+              type: 'number'
+              raw: (Number key) + 1
     else if str$ key
       log 'get string:', key, @
       @search key
@@ -264,6 +270,14 @@ prototype.value = boots =
         value: maps[body[0]]
 
   comment: ->
+
+  # load a object as a scope
+  load: (body, scope) ->
+    key = scope.get body.shift()
+    unless (obj$ key) and key.value?
+      throw new Error "load wrong key: #{key}"
+    body.forEach (exp) ->
+      key.read exp
 
 create_scope = (scope) ->
   child =
