@@ -1,0 +1,2 @@
+
+{run} = require '../coffee/main'

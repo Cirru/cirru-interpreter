@@ -1,0 +1,31 @@
+{
+  "name": "cirru-interpreter",
+  "version": "0.0.0",
+  "description": "a interpreter for Cirru language",
+  "main": "lib/index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "dependencies": {
+    "cirru-parser": "~0.4.2"
+  },
+  "devDependencies": {
+    "calabash": "~0.1.0"
+  },
+  "scripts": {
+    "test": "node-dev dev.coffee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jiyinyiyong/cirru-interpreter.git"
+  },
+  "keywords": [
+    "cirru",
+    "language"
+  ],
+  "author": "jiyinyiyong",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jiyinyiyong/cirru-interpreter/issues"
+  }
+}
