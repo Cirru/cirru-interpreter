@@ -19,4 +19,5 @@ print (number 3)
 
 print (get-scope)
 
-load-scope 4 (print 5)
+set child (hash)
+load-scope child (print 5)

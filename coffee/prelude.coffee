@@ -97,5 +97,8 @@ exports.prelude =
       log_error list[1], 'should be a variable name'
     unless (type list[2]) is 'array'
       log_error list[2], 'supposed to be expression here'
+    child = scope[list[1].text]
+    unless (type child) is 'object'
+      log_error list[1], 'not referring to object'
     list[2..].map (expression) ->
-      main.interpret scope[list[1].text], expression
+      main.interpret child, expression
