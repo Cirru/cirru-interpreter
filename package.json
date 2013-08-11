@@ -7,7 +7,7 @@
     "example": "examples"
   },
   "dependencies": {
-    "cirru-parser": "~0.4.2"
+    "cirru-parser": "~0.4.4"
   },
   "devDependencies": {
     "calabash": "~0.1.0"
