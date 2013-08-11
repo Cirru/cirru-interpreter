@@ -7,7 +7,7 @@
 , type } = require './prelude'
 
 root_scope = {}
-interpret = (scope, list) ->
+exports.interpret = interpret = (scope, list) ->
   # print list
   func = list[0].text
   if prelude[func]?
