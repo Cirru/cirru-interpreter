@@ -1,6 +1,6 @@
 
-number ss
+number 3
 
-qq s
+string x
 
-number
+bool yes
