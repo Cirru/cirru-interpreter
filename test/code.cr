@@ -25,3 +25,11 @@ load-scope child (print 5)
 under child
   print $ get key
   print $ get parent
+
+set c $ code
+  print 1
+  print (get parent)
+  print (get outer)
+eval (get c)
+
+import ./lib.cr

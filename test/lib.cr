@@ -1,0 +1,2 @@
+
+print "string in lib"

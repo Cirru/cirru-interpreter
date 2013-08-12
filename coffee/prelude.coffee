@@ -1,5 +1,7 @@
 
-{error} = require 'cirru-parser'
+path = require 'path'
+fs = require 'fs'
+{error, parse} = require 'cirru-parser'
 main = require './main'
 
 exports.type = type = (x) ->
@@ -123,3 +125,31 @@ exports.prelude =
       log_error list[1], 'not referring to object'
     list[2..].map (expression) ->
       main.interpret child, expression
+  code: (scope, list) ->
+    unless list[1]?
+      log_error list[0], 'add some code here'
+    list[1..].map (expression) ->
+      unless (type expression) is 'array'
+        log_error list[1], 'use expression'
+    parent: scope
+    list: list[1..]
+  eval: (scope, list) ->
+    unless list[1]?
+      log_error list[0], 'find code to eval'
+    unless (type list[1]) is 'array'
+      log_error list[1], 'should be expression here'
+    code = main.interpret scope, list[1]
+    child =
+      parent: code.parent
+      outer: scope
+    code.list.map (expression) ->
+      main.interpret child, expression
+  import: (scope, list) ->
+    unless list[1]?
+      log_error list[0], 'add path to be imported'
+    unless (type list[1]) is 'object'
+      log_error list[0], 'need argument in string'
+    module_path = path.join list[1].file.path, '..', list[1].text
+    unless fs.existsSync module_path
+      log_error list[1], "no file named #{module_path}"
+    main.run scope, (parse module_path)

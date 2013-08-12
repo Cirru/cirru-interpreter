@@ -40,7 +40,7 @@ npm install -g cirru-interpreter
 ✓ print a
 ✓ get-scope
 ✓ get-parent
-✗ parent
+✓ parent
 ✗ outer
 ✗ extend-scope a
 ```
@@ -50,7 +50,8 @@ npm install -g cirru-interpreter
 ```
 ✓ load a (print 3)
 ✓ under a (print 3)
-✗ bobble a
+✓ code (print x)
+✓ eval (get code)
 ```
 
 * pattern matching
@@ -62,7 +63,7 @@ npm install -g cirru-interpreter
 * module system
 
 ```
-✗ import ./a
+✓ import ./a
 ```
 
 * a live reloading runtime
