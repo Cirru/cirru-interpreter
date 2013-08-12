@@ -19,5 +19,9 @@ print (number 3)
 
 print (get-scope)
 
-set child (hash)
+set child (hash (key (number 3)))
 load-scope child (print 5)
+
+under child
+  print $ get key
+  print $ get parent

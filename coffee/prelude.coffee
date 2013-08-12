@@ -54,7 +54,7 @@ exports.prelude =
   hash: (scope, list) ->
     object = {}
     list[1..].map (pair) ->
-      object[pair[0]] = main.interpret scope, pair[1]
+      object[pair[0].text] = main.interpret scope, pair[1]
     object
   regex: (scope, list) ->
     unless list[1]?
@@ -93,11 +93,32 @@ exports.prelude =
   'load-scope': (scope, list) ->
     unless list[1]? and list[2]?
       log_error list[0], 'need at less 2 arguments..'
-    unless (type list[1]) is 'object'
+    if (type list[1]) is 'object'
+      child = scope[list[1].text]
+    else if (type list[1]) is 'array'
+      child = main.interpret scope, list[1]
+    else
       log_error list[1], 'should be a variable name'
     unless (type list[2]) is 'array'
       log_error list[2], 'supposed to be expression here'
-    child = scope[list[1].text]
+    unless (type child) is 'object'
+      log_error list[1], 'not referring to object'
+    list[2..].map (expression) ->
+      main.interpret child, expression
+  under: (scope, list) ->
+    unless list[1]? and list[2]?
+      log_error list[0], 'need at less 2 arguments..'
+    if (type list[1]) is 'object'
+      parent = scope[list[1].text]
+    else if (type list[1]) is 'array'
+      parent = main.interpret scope, list[1]
+    else
+      log_error list[1], 'should be a variable name'
+    unless (type list[2]) is 'array'
+      log_error list[2], 'supposed to be expression here'
+    child =
+      __proto__: parent
+      parent: scope
     unless (type child) is 'object'
       log_error list[1], 'not referring to object'
     list[2..].map (expression) ->
