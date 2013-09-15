@@ -11,6 +11,8 @@ hash (a (number 2))
 
 regex ^$
 
+set
+
 set variable (number 1)
 
 get variable

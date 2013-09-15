@@ -12,7 +12,8 @@ exports.log_error = log_error = (token, message) ->
     x: token.x
     y: token.y
     file: token.file
-  print error options
+  print (error options)
+  throw new Error 'out from log error'
 
 exports.prelude =
   number: (scope, list) ->

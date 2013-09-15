@@ -12,24 +12,21 @@ log_indentation = ''
 newline = ->
   util.print '\n'
   util.print log_indentation
-  empty_line = yes if line_head is yes
+  empty_line = (line_head is yes)
   line_head = yes
 
 indent = ->
   log_indentation += '  '
-indent_ine = ->
-  indent()
-  newline()
 dedent = ->
   log_indentation = log_indentation[...-2]
-dedent_line = ->
-  dedent()
-  newline()
 
-write_string = (item) ->
-  util.print ' ' unless line_head
+write_char = (item) ->
   util.print item
   line_head = no
+  empty_line = no
+write_string = (item) ->
+  util.print ' ' unless line_head
+  write_char item
 
 write = (item) ->
   the_type = type item
@@ -50,20 +47,21 @@ write = (item) ->
     error: ->
       write_string (clc.bgXterm(130).black item)
     array: ->
-      write_string (clc.xterm(22) '⤷')
+      newline() unless empty_line or line_head
+      write_char (clc.xterm(22) '⤷')
       indent()
       for value in item
         newline()
         write value
       dedent()
     object: ->
-      newline() unless empty_line
-      write_string (clc.xterm(22) '⤷')
+      # newline() unless empty_line or line_head
+      write_char (clc.xterm(22) '⤵')
       indent()
       for key, value of item
-        newline()
+        newline() unless empty_line or line_head
         write_string (clc.bgXterm(52) key)
-        util.print (clc.xterm(52) ':')
+        write_char (clc.xterm(52) ':')
         write value
       dedent()
     undefined, ->
@@ -71,5 +69,8 @@ write = (item) ->
 
 exports.print = (xs...) ->
   log_indentation = ''
+  newline() unless empty_line
+  empty_line = no
+  newline()
   xs.map write
-  console.log('') unless empty_line
+  empty_line = no
