@@ -7,7 +7,10 @@
     "example": "examples"
   },
   "dependencies": {
-    "cirru-parser": "~0.4.4"
+    "cirru-parser": "~0.4.4",
+    "coffee-pattern": "0.0.6",
+    "cli-color": "~0.2.2",
+    "moment": "~2.2.1"
   },
   "devDependencies": {
     "calabash": "~0.1.0"

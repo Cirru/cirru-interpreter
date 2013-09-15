@@ -4,13 +4,7 @@ fs = require 'fs'
 {error, parse} = require 'cirru-parser'
 main = require './main'
 
-exports.type = type = (x) ->
-  Object::toString.call(x)[1...-1].split(' ')[1].toLowerCase()
-
-exports.stringify = stringify = (object) ->
-  JSON.stringify object, null, 2
-
-exports.print = print = (xs...) -> console.log xs...
+{type, print, stringify} = require './tool'
 
 exports.log_error = log_error = (token, message) ->
   options =
