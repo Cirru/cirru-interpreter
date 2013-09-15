@@ -9,6 +9,6 @@ print (new Date)
 
 print (new Error 'this is an error')
 
-print [1,2]
+print [1,2, [1,2, [1, 2]]]
 
-print a: 1, b: 'ss'
+print a: 1, b: '2', {a: 1, b: {a: 2}}
