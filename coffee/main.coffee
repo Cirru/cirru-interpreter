@@ -1,10 +1,10 @@
 
 {parse, error} = require 'cirru-parser'
-{ prelude
-, log_error
-, print
-, stringify
-, type } = require './prelude'
+{prelude, log_error} = require './prelude'
+{print, stringify, type} = require './tool'
+{match} = require 'coffee-pattern'
+
+util = require 'util'
 
 root_scope = {}
 call_stack = []
@@ -17,7 +17,7 @@ exports.interpret = interpret = (scope, list) ->
     y: list[0].y
     file: list[0].file
   stamp = error options
-  call_stack.push {scope, stamp}
+  call_stack.unshift {scope, stamp}
   func = list[0].text
   if prelude[func]?
     prelude[func] scope, list
@@ -32,11 +32,10 @@ exports.run = (scope, ast) ->
   if ast.errors.length > 0
     console.log ast.errors.join('\n')
   else
-    ast.tree.map (line) ->
+    for line in ast.tree
+      call_stack = []
       try
         interpret scope, line if line.length > 0
       catch err
-        call_stack.map (record) -> print record.stamp
-        print '...'
-        has_coffee = (text) -> text.indexOf('.coffee') > 0
-        print err.stack.split('\n')[..10].join('\n')
+        call_stack[-4..].map (record) -> util.print record.stamp
+        break

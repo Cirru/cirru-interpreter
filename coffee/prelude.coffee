@@ -1,10 +1,13 @@
 
 path = require 'path'
 fs = require 'fs'
+util = require 'util'
+
 {error, parse} = require 'cirru-parser'
 main = require './main'
 
 {type, print, stringify} = require './tool'
+format = require './format'
 
 exports.log_error = log_error = (token, message) ->
   options =
@@ -12,14 +15,13 @@ exports.log_error = log_error = (token, message) ->
     x: token.x
     y: token.y
     file: token.file
-  print (error options)
+  util.print (error options)
   throw new Error 'out from log error'
 
 exports.prelude =
   number: (scope, list) ->
     # print 'number:', list
-    unless list[1]?
-      log_error list[0], 'need number here'
+    log_error list[0], 'need number here' unless list[1]?
     x = list[1]
     number = parseInt x.text
     if isNaN number
@@ -27,8 +29,7 @@ exports.prelude =
     else
       number
   bool: (scope, list) ->
-    unless list[1]?
-      log_error list[0], 'need bool symbol here'
+    log_error list[0], 'need bool symbol here' unless list[1]?
     x = list[1]
     if x.text in ['yes', 'true', 'on', 'ok', 'right']
       yes
@@ -37,8 +38,7 @@ exports.prelude =
     else
       log_error x, "#{stringify x.text} is not a valid bool"
   string: (scope, list) ->
-    unless list[1]?
-      log_error list[0], 'need string here'
+    log_error list[0], 'need string here' unless list[1]?
     x = list[1]
     list[1].text
   array: (scope, list) ->
@@ -54,16 +54,13 @@ exports.prelude =
       object[pair[0].text] = main.interpret scope, pair[1]
     object
   regex: (scope, list) ->
-    unless list[1]?
-      log_error list[0], 'need regular expression'
+    log_error list[0], 'need regular expression' unless list[1]?
     if list[2]? then new RegExp list[1], list[2]
     else new RegExp list[1]
   # operations on scope
   set: (scope, list) ->
-    unless list[1]? and list[2]?
-      log_error list[0], 'set need 2 arguments'
-    unless (type list[2]) is 'array'
-      log_error list[2], 'this should be an expression'
+    log_error list[0], 'set need 2 arguments' unless list[1]? and list[2]?
+    log_error list[2], 'this should be an expression' unless (type list[2]) is 'array'
     the_type = type list[1]
     # print 'the_type', the_type, list[1]
     if the_type is 'object'
@@ -71,25 +68,30 @@ exports.prelude =
     else if the_type is 'array'
       scope[main.interpret scope, list[1]] = main.interpret scope, list[2]
   get: (scope, list) ->
-    unless list[1]?
-      log_error list[0], 'add your variable to get'
+    log_error list[0], 'add your variable to get' unless list[1]?
     the_type = type list[1]
     if the_type is 'object'
       scope[list[1].text]
     else if the_type is 'array'
       scope[main.interpret scope, list[1]]
   print: (scope, list) ->
-    unless list[1]?
-      log_error list[0], 'write something you want to print'
+    log_error list[0], 'write something you want to print' unless list[1]?
+    the_type = type list[1]
+    if the_type is 'object'
+      format.print list[1].text
+    else if the_type is 'array'
+      format.print (main.interpret scope, list[1])
+    console.log '\n'
+  echo: (scope, list) ->
+    log_error list[0], 'write something you want to print' unless list[1]?
     the_type = type list[1]
     if the_type is 'object'
       print list[1].text
     else if the_type is 'array'
-      print main.interpret scope, list[1]
+      print (main.interpret scope, list[1])
   'get-scope': (scope, list) -> scope
   'load-scope': (scope, list) ->
-    unless list[1]? and list[2]?
-      log_error list[0], 'need at less 2 arguments..'
+    log_error list[0], 'need at less 2 arguments..' unless list[1]? and list[2]?
     if (type list[1]) is 'object'
       child = scope[list[1].text]
     else if (type list[1]) is 'array'
@@ -103,8 +105,7 @@ exports.prelude =
     list[2..].map (expression) ->
       main.interpret child, expression
   under: (scope, list) ->
-    unless list[1]? and list[2]?
-      log_error list[0], 'need at less 2 arguments..'
+    log_error list[0], 'need at less 2 arguments..' unless list[1]? and list[2]?
     if (type list[1]) is 'object'
       parent = scope[list[1].text]
     else if (type list[1]) is 'array'
@@ -121,18 +122,15 @@ exports.prelude =
     list[2..].map (expression) ->
       main.interpret child, expression
   code: (scope, list) ->
-    unless list[1]?
-      log_error list[0], 'add some code here'
+    log_error list[0], 'add some code here' unless list[1]?
     list[1..].map (expression) ->
       unless (type expression) is 'array'
         log_error list[1], 'use expression'
     parent: scope
     list: list[1..]
   eval: (scope, list) ->
-    unless list[1]?
-      log_error list[0], 'find code to eval'
-    unless (type list[1]) is 'array'
-      log_error list[1], 'should be expression here'
+    log_error list[0], 'find code to eval' unless list[1]?
+    log_error list[1], 'should be expression here' unless (type list[1]) is 'array'
     code = main.interpret scope, list[1]
     child =
       parent: code.parent
@@ -140,11 +138,21 @@ exports.prelude =
     code.list.map (expression) ->
       main.interpret child, expression
   import: (scope, list) ->
-    unless list[1]?
-      log_error list[0], 'add path to be imported'
-    unless (type list[1]) is 'object'
-      log_error list[0], 'need argument in string'
+    log_error list[0], 'add path to be imported' unless list[1]?
+    log_error list[0], 'need argument in string' unless (type list[1]) is 'object'
     module_path = path.join list[1].file.path, '..', list[1].text
     unless fs.existsSync module_path
       log_error list[1], "no file named #{module_path}"
     main.run scope, (parse module_path)
+  assert: (scope, list) ->
+    log_error list[0], 'need two args' unless list[1]? and list[2]?
+    value = main.interpret scope, list[1]
+    note = main.interpret scope, list[2]
+    print note if value is no
+  comment: (scope, list) ->
+    # will return nothing
+  equal: (scope, list) ->
+    log_error list[0], 'need two args' unless list[1]? and list[2]?
+    value_1 = main.interpret scope, list[1]
+    value_2 = main.interpret scope, list[2]
+    value_1 is value_2

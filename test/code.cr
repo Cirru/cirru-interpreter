@@ -11,27 +11,27 @@ hash (a (number 2))
 
 regex ^$
 
-set
-
 set variable (number 1)
 
 get variable
 
 print (number 3)
 
-print (get-scope)
+echo (get-scope)
 
 set child (hash (key (number 3)))
 load-scope child (print 5)
 
 under child
   print $ get key
-  print $ get parent
+  echo $ get parent
 
 set c $ code
   print 1
-  print (get parent)
-  print (get outer)
+  echo (get parent)
+  echo (get outer)
 eval (get c)
 
 import ./lib.cr
+
+assert (equal (bool no) (bool yes)) (string "show print this")
