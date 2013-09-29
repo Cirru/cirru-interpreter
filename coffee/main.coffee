@@ -30,12 +30,13 @@ exports.run = (scope, ast) ->
   scope = scope or root_scope
   ast = ast or (parse './test/code.cr')
   if ast.errors.length > 0
-    console.log ast.errors.join('\n')
+    print ast.errors.join('\n')
   else
     for line in ast.tree
       call_stack = []
       try
         interpret scope, line if line.length > 0
       catch err
+        print '%%%%% call stack %%%%%%'
         call_stack[-4..].map (record) -> util.print record.stamp
         break

@@ -3,6 +3,8 @@ number 3
 
 string x
 
+string
+
 bool yes
 
 array (number 4) 3
@@ -35,3 +37,7 @@ eval (get c)
 include ./lib.cr
 
 assert (equal (bool no) (bool yes)) (string "show print this")
+
+require ./module.cr
+require ./module.cr
+require ./module.cr

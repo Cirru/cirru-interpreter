@@ -170,9 +170,18 @@ exports.prelude =
 
   comment: (scope, list) ->
     # will return nothing
-    
+
   equal: (scope, list) ->
     log_error list[0], 'need two args' unless list[1]? and list[2]?
     value_1 = main.interpret scope, list[1]
     value_2 = main.interpret scope, list[2]
     value_1 is value_2
+
+ms = {}
+exports.prelude.require = (scope, list) ->
+  log_error list[0], 'need a path' unless list[1]?
+  new_path = path.join list[1].file.path, list[1].text
+
+  unless ms[new_path]?
+    ms[new_path] = exports.prelude.include scope, list
+  ms[new_path]
