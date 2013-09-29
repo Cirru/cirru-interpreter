@@ -137,7 +137,7 @@ exports.prelude =
       outer: scope
     code.list.map (expression) ->
       main.interpret child, expression
-  import: (scope, list) ->
+  include: (scope, list) ->
     log_error list[0], 'add path to be imported' unless list[1]?
     log_error list[0], 'need argument in string' unless (type list[1]) is 'object'
     module_path = path.join list[1].file.path, '..', list[1].text

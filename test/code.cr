@@ -32,6 +32,6 @@ set c $ code
   echo (get outer)
 eval (get c)
 
-import ./lib.cr
+include ./lib.cr
 
 assert (equal (bool no) (bool yes)) (string "show print this")
