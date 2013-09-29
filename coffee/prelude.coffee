@@ -28,6 +28,7 @@ exports.prelude =
       log_error x, "#{stringify x.text} is not valid number"
     else
       number
+
   bool: (scope, list) ->
     log_error list[0], 'need bool symbol here' unless list[1]?
     x = list[1]
@@ -37,10 +38,12 @@ exports.prelude =
       no
     else
       log_error x, "#{stringify x.text} is not a valid bool"
+
   string: (scope, list) ->
     log_error list[0], 'need string here' unless list[1]?
     x = list[1]
     list[1].text
+
   array: (scope, list) ->
     list[1..].map (x) ->
       the_type = type x
@@ -48,16 +51,20 @@ exports.prelude =
       else if the_type is 'array'
         main.interpret scope, x
       else log_error x, "#{stringify x.text} is not a valid list item"
+
   hash: (scope, list) ->
     object = {}
     list[1..].map (pair) ->
       object[pair[0].text] = main.interpret scope, pair[1]
     object
+
   regex: (scope, list) ->
     log_error list[0], 'need regular expression' unless list[1]?
     if list[2]? then new RegExp list[1], list[2]
     else new RegExp list[1]
+
   # operations on scope
+
   set: (scope, list) ->
     log_error list[0], 'set need 2 arguments' unless list[1]? and list[2]?
     log_error list[2], 'this should be an expression' unless (type list[2]) is 'array'
@@ -67,6 +74,7 @@ exports.prelude =
       scope[list[1].text] = main.interpret scope, list[2]
     else if the_type is 'array'
       scope[main.interpret scope, list[1]] = main.interpret scope, list[2]
+
   get: (scope, list) ->
     log_error list[0], 'add your variable to get' unless list[1]?
     the_type = type list[1]
@@ -74,6 +82,7 @@ exports.prelude =
       scope[list[1].text]
     else if the_type is 'array'
       scope[main.interpret scope, list[1]]
+
   print: (scope, list) ->
     log_error list[0], 'write something you want to print' unless list[1]?
     the_type = type list[1]
@@ -82,6 +91,7 @@ exports.prelude =
     else if the_type is 'array'
       format.print (main.interpret scope, list[1])
     console.log '\n'
+
   echo: (scope, list) ->
     log_error list[0], 'write something you want to print' unless list[1]?
     the_type = type list[1]
@@ -89,7 +99,10 @@ exports.prelude =
       print list[1].text
     else if the_type is 'array'
       print (main.interpret scope, list[1])
-  'get-scope': (scope, list) -> scope
+
+  'get-scope': (scope, list) ->
+    scope
+
   'load-scope': (scope, list) ->
     log_error list[0], 'need at less 2 arguments..' unless list[1]? and list[2]?
     if (type list[1]) is 'object'
@@ -104,6 +117,7 @@ exports.prelude =
       log_error list[1], 'not referring to object'
     list[2..].map (expression) ->
       main.interpret child, expression
+
   under: (scope, list) ->
     log_error list[0], 'need at less 2 arguments..' unless list[1]? and list[2]?
     if (type list[1]) is 'object'
@@ -121,6 +135,7 @@ exports.prelude =
       log_error list[1], 'not referring to object'
     list[2..].map (expression) ->
       main.interpret child, expression
+
   code: (scope, list) ->
     log_error list[0], 'add some code here' unless list[1]?
     list[1..].map (expression) ->
@@ -128,6 +143,7 @@ exports.prelude =
         log_error list[1], 'use expression'
     parent: scope
     list: list[1..]
+
   eval: (scope, list) ->
     log_error list[0], 'find code to eval' unless list[1]?
     log_error list[1], 'should be expression here' unless (type list[1]) is 'array'
@@ -137,6 +153,7 @@ exports.prelude =
       outer: scope
     code.list.map (expression) ->
       main.interpret child, expression
+
   include: (scope, list) ->
     log_error list[0], 'add path to be imported' unless list[1]?
     log_error list[0], 'need argument in string' unless (type list[1]) is 'object'
@@ -144,13 +161,16 @@ exports.prelude =
     unless fs.existsSync module_path
       log_error list[1], "no file named #{module_path}"
     main.run scope, (parse module_path)
+
   assert: (scope, list) ->
     log_error list[0], 'need two args' unless list[1]? and list[2]?
     value = main.interpret scope, list[1]
     note = main.interpret scope, list[2]
     print note if value is no
+
   comment: (scope, list) ->
     # will return nothing
+    
   equal: (scope, list) ->
     log_error list[0], 'need two args' unless list[1]? and list[2]?
     value_1 = main.interpret scope, list[1]
