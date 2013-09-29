@@ -161,6 +161,7 @@ exports.prelude =
     unless fs.existsSync module_path
       log_error list[1], "no file named #{module_path}"
     main.run scope, (parse module_path)
+    scope
 
   assert: (scope, list) ->
     log_error list[0], 'need two args' unless list[1]? and list[2]?
@@ -184,4 +185,4 @@ exports.prelude.require = (scope, list) ->
 
   unless ms[new_path]?
     ms[new_path] = exports.prelude.include scope, list
-  ms[new_path]
+  ms[new_path].export

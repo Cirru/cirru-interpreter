@@ -1,4 +1,5 @@
 
+clc = require 'cli-color'
 {parse, error} = require 'cirru-parser'
 {prelude, log_error} = require './prelude'
 {print, stringify, type} = require './tool'
@@ -37,6 +38,6 @@ exports.run = (scope, ast) ->
       try
         interpret scope, line if line.length > 0
       catch err
-        print '%%%%% call stack %%%%%%'
+        print clc.bgXterm(130).white "\n#{err}"
         call_stack[-4..].map (record) -> util.print record.stamp
         break
