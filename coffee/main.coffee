@@ -28,8 +28,6 @@ exports.interpret = interpret = (scope, list) ->
     log_error list[0], "can not found #{stringify list[0].text}"
 
 exports.run = (scope, ast) ->
-  scope = scope or root_scope
-  ast = ast or (parse './test/code.cr')
   if ast.errors.length > 0
     print ast.errors.join('\n')
   else
@@ -41,3 +39,6 @@ exports.run = (scope, ast) ->
         print clc.bgXterm(130).white "\n#{err}"
         call_stack[-4..].map (record) -> util.print record.stamp
         break
+
+exports.start = (srcpath) ->
+  exports.run root_scope, (parse srcpath)

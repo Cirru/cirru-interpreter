@@ -63,7 +63,8 @@ npm install -g cirru-interpreter
 * module system
 
 ```
-✓ import ./a
+✓ include ./a
+✓ require ./b
 ```
 
 * a live reloading runtime

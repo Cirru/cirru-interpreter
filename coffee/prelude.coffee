@@ -154,15 +154,6 @@ exports.prelude =
     code.list.map (expression) ->
       main.interpret child, expression
 
-  include: (scope, list) ->
-    log_error list[0], 'add path to be imported' unless list[1]?
-    log_error list[0], 'need argument in string' unless (type list[1]) is 'object'
-    module_path = path.join list[1].file.path, '..', list[1].text
-    unless fs.existsSync module_path
-      log_error list[1], "no file named #{module_path}"
-    main.run scope, (parse module_path)
-    scope
-
   assert: (scope, list) ->
     log_error list[0], 'need two args' unless list[1]? and list[2]?
     value = main.interpret scope, list[1]
@@ -179,10 +170,20 @@ exports.prelude =
     value_1 is value_2
 
 ms = {}
+
+exports.prelude.include = (scope, list) ->
+  log_error list[0], 'add path to be imported' unless list[1]?
+  log_error list[0], 'need argument in string' unless (type list[1]) is 'object'
+  module_path = path.join list[1].file.path, '..', list[1].text
+  unless fs.existsSync module_path
+    log_error list[1], "no file named #{module_path}"
+  main.run scope, (parse module_path)
+  scope
+
 exports.prelude.require = (scope, list) ->
   log_error list[0], 'need a path' unless list[1]?
-  new_path = path.join list[1].file.path, list[1].text
+  module_path = path.join list[1].file.path, list[1].text
 
-  unless ms[new_path]?
-    ms[new_path] = exports.prelude.include scope, list
-  ms[new_path].export
+  unless ms[module_path]?
+    ms[module_path] = exports.prelude.include scope, list
+  ms[module_path].export
