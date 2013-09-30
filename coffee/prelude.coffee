@@ -2,6 +2,7 @@
 path = require 'path'
 fs = require 'fs'
 util = require 'util'
+EventEmitter = require('events').EventEmitter
 
 {error, parse} = require 'cirru-parser'
 main = require './main'
@@ -169,6 +170,20 @@ exports.prelude =
 
 ms = {}
 
+reload_scope = ->
+  Object.keys(ms).map (module_path) ->
+    fs.unwatchFile module_path
+  ms = {}
+
+exports.reloading = reloading = new EventEmitter
+
+watch_scope = (module_path) ->
+  console.log 'trying to watch', module_path
+  fs.watchFile module_path, interval: 200, ->
+    console.log 'reloading......'
+    reload_scope()
+    reloading.emit 'reload'
+
 exports.prelude.require = (scope, list) ->
   log_error list[0], 'need argument in string' unless (type list[1]) is 'object'
   log_error list[0], 'need a path' unless list[1]?
@@ -179,4 +194,5 @@ exports.prelude.require = (scope, list) ->
   unless ms[module_path]?
     ms[module_path] = {}
     ms[module_path] = main.run scope, (parse module_path)
+    watch_scope module_path
   ms[module_path].export

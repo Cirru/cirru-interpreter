@@ -4,7 +4,7 @@
   "description": "a interpreter for Cirru language",
   "main": "lib/index.js",
   "directories": {
-    "example": "examples"
+    "test": "test"
   },
   "dependencies": {
     "cirru-parser": "~0.4.4",
@@ -26,8 +26,11 @@
     "cirru",
     "language"
   ],
+  "bin": {
+    "cirru": "./bin/cirru.coffee"
+  },
   "author": "jiyinyiyong",
-  "license": "MIT",
+  "license": "BSD",
   "bugs": {
     "url": "https://github.com/jiyinyiyong/cirru-interpreter/issues"
   }

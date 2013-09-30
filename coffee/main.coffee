@@ -7,7 +7,6 @@ clc = require 'cli-color'
 
 util = require 'util'
 
-root_scope = {}
 call_stack = []
 
 exports.interpret = interpret = (scope, list) ->
@@ -41,4 +40,8 @@ exports.run = (scope, ast) ->
         break
 
 exports.start = (srcpath) ->
-  exports.run root_scope, (parse srcpath)
+  entry_ast = parse srcpath
+  exports.run {}, entry_ast
+  require('./prelude').reloading.on 'reload', ->
+    console.log '\n ... Reloading From File ... \n'
+    exports.run {}, entry_ast

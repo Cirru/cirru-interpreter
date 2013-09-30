@@ -63,7 +63,6 @@ npm install -g cirru-interpreter
 * module system
 
 ```
-✓ include ./a
 ✓ require ./b
 ```
 
