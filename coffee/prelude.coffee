@@ -6,8 +6,7 @@ util = require 'util'
 {error, parse} = require 'cirru-parser'
 main = require './main'
 
-{type, print, stringify} = require './tool'
-format = require './format'
+{type, print, stringify, pretty} = require './tool'
 
 exports.log_error = log_error = (token, message) ->
   options =
@@ -87,10 +86,9 @@ exports.prelude =
     log_error list[0], 'write something you want to print' unless list[1]?
     the_type = type list[1]
     if the_type is 'object'
-      format.print list[1].text
+      print list[1].text
     else if the_type is 'array'
-      format.print (main.interpret scope, list[1])
-    console.log '\n'
+      print (main.interpret scope, list[1])
 
   echo: (scope, list) ->
     log_error list[0], 'write something you want to print' unless list[1]?
@@ -171,19 +169,14 @@ exports.prelude =
 
 ms = {}
 
-exports.prelude.include = (scope, list) ->
-  log_error list[0], 'add path to be imported' unless list[1]?
-  log_error list[0], 'need argument in string' unless (type list[1]) is 'object'
-  module_path = path.join list[1].file.path, '..', list[1].text
-  unless fs.existsSync module_path
-    log_error list[1], "no file named #{module_path}"
-  main.run scope, (parse module_path)
-  scope
-
 exports.prelude.require = (scope, list) ->
+  log_error list[0], 'need argument in string' unless (type list[1]) is 'object'
   log_error list[0], 'need a path' unless list[1]?
-  module_path = path.join list[1].file.path, list[1].text
+  module_path = path.join list[1].file.path, '../', list[1].text
+  unless fs.existsSync module_path
+    log_error list[1], "no module named #{module_path}"
 
   unless ms[module_path]?
-    ms[module_path] = exports.prelude.include scope, list
+    ms[module_path] = {}
+    ms[module_path] = main.run scope, (parse module_path)
   ms[module_path].export

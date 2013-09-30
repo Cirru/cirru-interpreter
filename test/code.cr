@@ -32,10 +32,8 @@ set c $ code
   echo (get outer)
 eval (get c)
 
-include ./lib.cr
-
 assert (equal (bool no) (bool yes)) (string "show print this")
 
 print $ require ./module.cr
-print $ require ./module.cr
-print $ require ./module.cr
+comment $ print $ require ./module.cr
+comment $ print $ require ./module.cr
