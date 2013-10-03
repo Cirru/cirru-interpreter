@@ -10,3 +10,6 @@ exports.print = (xs...) ->
 
 exports.write = (xs...) ->
   require('util').print xs...
+
+exports.assert = (xs...) ->
+  console.assert xs...

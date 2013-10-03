@@ -1,0 +1,2 @@
+
+echo (string log)

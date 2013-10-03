@@ -5,7 +5,7 @@ string x
 
 bool yes
 
-array (number 4) 3
+array (number 4) (number 3)
 
 hash (a (number 2))
 
@@ -20,14 +20,14 @@ print (number 3)
 echo (get-scope)
 
 set child (hash (key (number 3)))
-load-scope child (print 5)
+load-scope child (print (string 5))
 
 under child
   print $ get key
   echo $ get parent
 
 set c $ code
-  print 1
+  print (number 1)
   echo (get parent)
   echo (get outer)
 eval (get c)
@@ -35,5 +35,7 @@ eval (get c)
 assert (equal (bool no) (bool yes)) (string "show print this")
 
 print $ require ./module.cr
-comment $ print $ require ./module.cr
-comment $ print $ require ./module.cr
+print $ require ./module.cr
+print $ require ./module.cr
+
+print (string aa)

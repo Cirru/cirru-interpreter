@@ -1,11 +1,12 @@
 
 clc = require 'cli-color'
 {parse, error} = require 'cirru-parser'
-{prelude, log_error} = require './prelude'
+{prelude, cirru_error} = require './prelude'
 {print, stringify, type} = require './tool'
 {match} = require 'coffee-pattern'
 
 util = require 'util'
+fs = require 'fs'
 
 call_stack = []
 
@@ -18,13 +19,14 @@ exports.interpret = interpret = (scope, list) ->
     file: list[0].file
   stamp = error options
   call_stack.unshift {scope, stamp}
+
   func = list[0].text
-  if prelude[func]?
-    prelude[func] scope, list
-  else if scope[func]?
+  if scope[func]?
     scope[func] scope, list
+  else if prelude[func]?
+    prelude[func] scope, list
   else
-    log_error list[0], "can not found #{stringify list[0].text}"
+    cirru_error list[0], "not found: #{stringify list[0].text}"
 
 exports.run = (scope, ast) ->
   if ast.errors.length > 0
@@ -36,12 +38,15 @@ exports.run = (scope, ast) ->
         interpret scope, line if line.length > 0
       catch err
         print clc.bgXterm(130).white "\n#{err}"
+        print err.stack.split('\n')[1..7].join('\n')
         call_stack[-4..].map (record) -> util.print record.stamp
         break
 
 exports.start = (srcpath) ->
-  entry_ast = parse srcpath
-  exports.run {}, entry_ast
+  exports.run {}, (parse srcpath)
   require('./prelude').reloading.on 'reload', ->
     console.log '\n ... Reloading From File ... \n'
-    exports.run {}, entry_ast
+    exports.run {}, (parse srcpath)
+
+  fs.watchFile srcpath, interval: 200, ->
+    require('./prelude').reloading.emit 'reload'
