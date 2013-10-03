@@ -30,7 +30,7 @@ cirru_read = (scope, xs) ->
     else
       cirru_error x, "cannot recognize #{stringify x}"
 
-has_no_undefined = (args, x) ->
+has_no_undefined = (args) ->
   args.map (x) ->
     assert (x isnt undefined), 'undefined not allowed'
 
@@ -62,7 +62,7 @@ exports.prelude =
     length_equal args, 1
     x = args[0]
     if x.text in ['yes', 'true', 'on', 'ok', 'right'] then yes
-    else if x.text in ['no', 'false', 'off', 'wrong'] no
+    else if x.text in ['no', 'false', 'off', 'wrong'] then no
     else cirru_error x, "#{stringify x.text} is not a valid bool"
 
   string: (scope, list) ->
@@ -95,11 +95,14 @@ exports.prelude =
     has_no_undefined args
     be_type args[1], 'array'
     the_type = type list[1]
-    # print 'the_type', the_type, list[1]
-    if the_type is 'object'
-      scope[args[0].text] = main.interpret scope, args[1]
-    else if the_type is 'array'
-      scope[main.interpret scope, list[1]] = main.interpret scope, args[1]
+    value = main.interpret scope, args[1]
+    key =
+      if the_type is 'object'
+        args[0].text
+      else if the_type is 'array'
+        main.interpret scope, list[1]
+      else
+    scope[key] = value
 
   get: (scope, list) ->
     args = list[1..]
@@ -111,7 +114,12 @@ exports.prelude =
       scope[main.interpret scope, list[1]]
 
   print: (scope, list) ->
-    args = cirru_read scope, list[1..]
+    args = list[1..].map (x) ->
+      if (type x.text) is 'string' then scope[x]
+      else if (type x) is 'array'
+        ret = main.interpret scope, x
+        # console.log 'should main:::', ret, x
+        ret
     has_no_undefined args
     longer_than args, 0
     print args...
@@ -199,7 +207,7 @@ exports.prelude =
     args = cirru_read scope, list[1..]
     has_no_undefined args
     length_equal args, 2
-    value_1 is value_2
+    args[0] is args[1]
 
   require: (scope, list) ->
     args = list[1..]
@@ -213,7 +221,7 @@ exports.prelude =
       ms[module_path] = main.run scope, (parse module_path)
       watch_scope module_path
 
-    ms[module_path].export
+    ms[module_path].exports
 
   add: (scope, list) ->
     args = cirru_read scope, list[1..]

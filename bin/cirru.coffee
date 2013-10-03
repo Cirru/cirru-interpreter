@@ -1,3 +1,3 @@
-#! /usr/bin/env coffee
+#! /usr/bin/env node
 
 require('../coffee/command')

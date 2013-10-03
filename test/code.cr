@@ -32,7 +32,7 @@ set c $ code
   echo (get outer)
 eval (get c)
 
-assert (equal (bool no) (bool yes)) (string "show print this")
+assert (equal (bool right) (bool yes)) (string "show print this")
 
 print $ require ./module.cr
 print $ require ./module.cr

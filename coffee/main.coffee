@@ -41,6 +41,7 @@ exports.run = (scope, ast) ->
         print err.stack.split('\n')[1..7].join('\n')
         call_stack[-4..].map (record) -> util.print record.stamp
         break
+  scope or {}
 
 exports.start = (srcpath) ->
   exports.run {}, (parse srcpath)

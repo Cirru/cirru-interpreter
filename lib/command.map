@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "command.js",
+  "sourceRoot": "..",
+  "sources": [
+    "coffee/command.coffee"
+  ],
+  "names": [],
+  "mappings": ";AACA,IAAA,CAAA;;AAAC,CAAD,EAAU,EAAV,EAAU,CAAA;;AAEV,CAFA,GAEmB,CAAnB,EAAa"
+}
