@@ -238,8 +238,8 @@ exports.prelude =
     assert (code.parent? and code.ast?), 'should be code'
     args[1..].map a_token
     child =
-      __proto__: code.scope
-      parent: scope
+      parent: code.parent
+      outer: scope
       args: args[1..].map (x) -> x.text
     ret = null
     code.ast.map (expression) -> 

@@ -11,8 +11,8 @@ assert
   string "show print this"
 
 set pseudo-func $ code
-  set a $ at parent $ at args $ number 1
-  set b $ at parent $ at args $ number 2
+  set a $ at outer $ at args $ number 1
+  set b $ at outer $ at args $ number 2
   add a b
 
 set num-a $ number 3
