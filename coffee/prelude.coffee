@@ -260,6 +260,7 @@ exports.prelude =
 
   '--': (scope, list) ->
     # will return nothing
+    null
 
   # math
 
