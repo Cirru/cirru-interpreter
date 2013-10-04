@@ -29,7 +29,7 @@ npm install -g cirru-interpreter
 ✓ array (number 1) (string string)
 ✓ hash (key (number 3)) (key (string value))
 ✓ regex ^hello\sworld$
-✗ nil
+✓ nil
 ```
 
 * set/get variables in current scope
@@ -41,8 +41,7 @@ npm install -g cirru-interpreter
 ✓ get-scope
 ✓ get-parent
 ✓ parent
-✗ outer
-✗ extend-scope a
+✓ outer
 ```
 
 * load code and run in a given scope
@@ -69,5 +68,5 @@ npm install -g cirru-interpreter
 * a live reloading runtime
 
 ```
-✗ print a
+✓ print "being reloading"
 ```

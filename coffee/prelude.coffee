@@ -55,6 +55,16 @@ a_token = (x) ->
 an_expression = (xs) ->
   (type xs) is 'array' and xs.length > 0
 
+cirru_variable = (scope, x) ->
+  if a_token x then scope[x.text]
+  else if an_expression x then main.interpret scope, x
+  else cirru_error x, "variable #{x} not recognized"
+
+cirru_name = (scope, x) ->
+  if a_token x then x.text
+  else if an_expression x then main.interpret scope, x
+  else cirru_error x, "name #{x} not recognized"
+
 # prelude
 
 exports.prelude =
@@ -83,11 +93,8 @@ exports.prelude =
   string: (scope, list) ->
     args = list[1..]
     length_equal args, 1
-    x = args[0]
-    if (type x.text) is 'string' then x.text
-    else if (type x) is 'array'
-      String (main.interpret scope, x)
-    else cirru_error x, "#{x} is not a string"
+    x = cirru_name scope, args[0]
+    String x
 
   array: (scope, list) ->
     args = cirru_read scope, list[1..]
@@ -116,12 +123,8 @@ exports.prelude =
     args = list[1..]
     has_no_undefined args
     length_equal args, 2
-    x = args[0]
-    key = args[1]
-    if an_expression x then x = main.interpret scope, x
-    else if a_token x then x = scope[x.text]
-    if an_expression key then key = main.interpret scope, key
-    else if a_token key then key = key.x
+    x = cirru_variable scope, args[0]
+    key = cirru_name scope, args[1]
     if (type key) is 'number' then key -= 1
     ret = x[key]
     assert (ret isnt undefined), "#{x}[#{key}] got undefined"
@@ -133,14 +136,8 @@ exports.prelude =
     args = list[1..]
     has_no_undefined args
     be_type args[1], 'array'
-    the_type = type args[0]
-    value = main.interpret scope, args[1]
-    key =
-      if the_type is 'object'
-        args[0].text
-      else if the_type is 'array'
-        main.interpret scope, args[0]
-      else
+    key = cirru_name scope, args[0]
+    value = cirru_variable scope, args[1]
     scope[key] = value
 
   get: (scope, list) ->
@@ -154,10 +151,7 @@ exports.prelude =
 
   print: (scope, list) ->
     ret = null
-    args = list[1..].map (x) ->
-      if (type x.text) is 'string' then scope[x.text]
-      else if (type x) is 'array' then main.interpret scope, x
-      else cirru_error x, 'unexpected case'
+    args = list[1..].map (x) -> cirru_variable scope, x
     has_no_undefined args
     longer_than args, 0
     args = args.map (x) ->
@@ -226,11 +220,8 @@ exports.prelude =
     has_no_undefined args
     longer_than args, 0
     args.map an_expression
-    x = args[0]
-    code =
-      if an_expression x then main.interpret scope, x
-      else if a_token x then scope[x.text]
-      else cirru_error x, 'not recognized'
+    code = cirru_variable scope, args[0]
+    assert (code.parent? and code.ast?), 'should be code'
     child =
       parent: code.parent
       outer: scope
@@ -238,6 +229,24 @@ exports.prelude =
     code.ast.map (expression) ->
       ret = main.interpret child, expression
     ret
+
+  call: (scope, list) ->
+    args = list[1..]
+    has_no_undefined args
+    longer_than args, 0
+    code = cirru_variable scope, args[0]
+    assert (code.parent? and code.ast?), 'should be code'
+    args[1..].map a_token
+    child =
+      __proto__: code.scope
+      parent: scope
+      args: args[1..].map (x) -> x.text
+    ret = null
+    code.ast.map (expression) -> 
+      ret = main.interpret child, expression
+    ret
+
+  # comment
 
   assert: (scope, list) ->
     args = list[1..]
@@ -248,8 +257,6 @@ exports.prelude =
     if value is no
       print note
       assert no, "assert #{args[0]} equals #{args[1]} failed"
-
-  # comment
 
   '--': (scope, list) ->
     # will return nothing
