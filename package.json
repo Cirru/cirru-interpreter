@@ -1,13 +1,13 @@
 {
   "name": "cirru-interpreter",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "a interpreter for Cirru language",
   "main": "lib/index.js",
   "directories": {
     "test": "test"
   },
   "dependencies": {
-    "cirru-parser": "~0.4.4",
+    "cirru-parser": "~0.4.6",
     "coffee-pattern": "0.0.6",
     "cli-color": "~0.2.2"
   },
