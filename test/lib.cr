@@ -1,2 +1,0 @@
-
-print "string in lib"

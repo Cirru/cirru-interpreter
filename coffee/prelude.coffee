@@ -105,6 +105,12 @@ exports.prelude =
   nil: (scope, list) ->
     null
 
+  at: (scope, list) ->
+    args = list[1..]
+    has_no_undefined args
+    length_equal args, 2
+
+
   # operations on scope
 
   set: (scope, list) ->
