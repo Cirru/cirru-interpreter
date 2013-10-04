@@ -49,6 +49,12 @@ check_numbers = (scope, list) ->
   args.map (x) -> be_type x, 'number'
   args
 
+a_token = (x) ->
+  x? and (type x.text) is 'string'
+
+an_expression = (xs) ->
+  (type xs) is 'array' and xs.length > 0
+
 # prelude
 
 exports.prelude =
@@ -109,7 +115,15 @@ exports.prelude =
     args = list[1..]
     has_no_undefined args
     length_equal args, 2
-
+    x = args[0]
+    key = args[1]
+    if an_expression x then x = main.interpret scope, x
+    else if a_token x then x = scope[x.text]
+    if an_expression key then key = main.interpret scope, key
+    else if a_token key then key = key.x
+    ret = x[key]
+    assert (ret isnt undefined), "#{x}[#{key}] got undefined"
+    ret
 
   # operations on scope
 
@@ -151,8 +165,9 @@ exports.prelude =
 
   echo: (scope, list) ->
     args = list[1..]
+    args.map (x) -> be_type x.text, 'string'
     longer_than args, 0
-    print args...
+    print args.map((x) -> x.text).join(' ')
 
   'get-scope': (scope, list) ->
     scope
