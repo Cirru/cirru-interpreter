@@ -39,3 +39,5 @@ print $ require ./module.cr
 print $ require ./module.cr
 
 print (string aa)
+
+print (nil)

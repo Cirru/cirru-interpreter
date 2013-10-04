@@ -63,19 +63,27 @@ exports.prelude =
     x = args[0]
     if x.text in ['yes', 'true', 'on', 'ok', 'right'] then yes
     else if x.text in ['no', 'false', 'off', 'wrong'] then no
+    else if 0 < x < Infinity then yes
+    else if -Infinity < x < 0 then no
     else cirru_error x, "#{stringify x.text} is not a valid bool"
 
   string: (scope, list) ->
     args = list[1..]
     length_equal args, 1
-    args[0].text
+    x = args[0]
+    if (type x.text) is 'string' then x.text
+    else if (type x) is 'array'
+      String (main.interpret scope, x)
+    else cirru_error x, "#{x} is not a string"
 
   array: (scope, list) ->
     args = cirru_read scope, list[1..]
+    has_no_undefined args
     args
 
   hash: (scope, list) ->
     args = list[1..]
+    has_no_undefined args
     object = {}
     args.map (pair) ->
       object[pair[0].text] = main.interpret scope, pair[1]
@@ -85,8 +93,11 @@ exports.prelude =
     args = list[1..]
     length_equal args, 1
 
-    if x? then new RegExp list[1], list[2]
-    else new RegExp list[1]
+    if x? then new RegExp args[0], args[1]
+    else new RegExp args[0]
+
+  nil: (scope, list) ->
+    null
 
   # operations on scope
 
@@ -94,13 +105,13 @@ exports.prelude =
     args = list[1..]
     has_no_undefined args
     be_type args[1], 'array'
-    the_type = type list[1]
+    the_type = type args[0]
     value = main.interpret scope, args[1]
     key =
       if the_type is 'object'
         args[0].text
       else if the_type is 'array'
-        main.interpret scope, list[1]
+        main.interpret scope, args[0]
       else
     scope[key] = value
 
@@ -109,9 +120,9 @@ exports.prelude =
     has_no_undefined args
     the_type = type args[0]
     if the_type is 'object'
-      scope[list[1].text]
+      scope[args[0].text]
     else if the_type is 'array'
-      scope[main.interpret scope, list[1]]
+      scope[main.interpret scope, args[0]]
 
   print: (scope, list) ->
     args = list[1..].map (x) ->
@@ -122,6 +133,8 @@ exports.prelude =
         ret
     has_no_undefined args
     longer_than args, 0
+    args = args.map (x) ->
+      if x then x else 'nil'
     print args...
 
   echo: (scope, list) ->
@@ -143,7 +156,7 @@ exports.prelude =
     else if (type x) is 'array'
       child = main.interpret scope, x
     else
-      cirru_error list[1], 'should be a link to a scope'
+      cirru_error args[0], 'should be a link to a scope'
     be_type child, 'object'
     args[1..].map (expression) ->
       assert expression, 'supposed to be expression here'
@@ -153,19 +166,19 @@ exports.prelude =
     args = list[1..]
     longer_than args, 2
     has_no_undefined args
-    if (type list[1]) is 'object'
-      parent = scope[list[1].text]
-    else if (type list[1]) is 'array'
-      parent = main.interpret scope, list[1]
+    if (type args[0]) is 'object'
+      parent = scope[args[0].text]
+    else if (type args[0]) is 'array'
+      parent = main.interpret scope, args[0]
     else
-      cirru_error list[1], 'should be a variable name'
-    unless (type list[2]) is 'array'
-      cirru_error list[2], 'supposed to be expression here'
+      cirru_error args[0], 'should be a variable name'
+    unless (type args[1]) is 'array'
+      cirru_error args[1], 'supposed to be expression here'
     child =
       __proto__: parent
       parent: scope
     unless (type child) is 'object'
-      cirru_error list[1], 'not referring to object'
+      cirru_error args[0], 'not referring to object'
     list[2..].map (expression) ->
       main.interpret child, expression
 
@@ -183,7 +196,7 @@ exports.prelude =
     has_no_undefined args
     longer_than args, 0
     args.map (expression) -> be_type expression, 'array'
-    code = main.interpret scope, list[1]
+    code = main.interpret scope, args[0]
     child =
       parent: code.parent
       outer: scope
@@ -200,7 +213,7 @@ exports.prelude =
     note = main.interpret scope, args[1]
     if value is no
       print note
-      assert no, "assert #{list[1]} equals #{list[2]} failed"
+      assert no, "assert #{args[0]} equals #{args[1]} failed"
 
   comment: (scope, list) ->
     # will return nothing
