@@ -2,71 +2,31 @@
 Cirru Interpreter
 ------
 
-An exercise for learning to create a scripting languages.
-Based on the syntax of Cirru-Parser.
-
-```
-npm install -g cirru-interpreter
-```
+An exprimental scripting language.
 
 ### Features
 
-`✗` means waiting for implementation, `✓` means done.
+* Reload when file changes
+* Simplistic syntax based on [cirru-parser][cirru-parser]
+* Code as value to be passed around
+* Scope as a value like JSON Object
+* CommonJS like module system
 
-* comment
+[cirru-parser]: https://npmjs.org/package/cirru-parser
 
-```
-✓ -- nothing
-```
+### In plan
 
-* basic data types
+* Run JS functions in Cirru
+* File APIs
+* Robust data manipulations
+* Recursion
 
-```
-✓ number 1
-✓ bool yes
-✓ string this-is-a-string
-✓ string "this is a string"
-✓ array (number 1) (string string)
-✓ hash (key (number 3)) (key (string value))
-✓ regex ^hello\sworld$
-✓ nil
-```
+I'm going to take a break, not so confident to finish it so far.
 
-* set/get variables in current scope
+### Editor Support
 
-```
-✓ set a (number 1)
-✓ get a
-✓ print a
-✓ get-scope
-✓ get-parent
-✓ parent
-✓ outer
-```
+[Cirru.subl](https://github.com/jiyinyiyong/Cirru.subl)
 
-* load code and run in a given scope
+### License
 
-```
-✓ load a (print 3)
-✓ under a (print 3)
-✓ code (print x)
-✓ eval (get code)
-```
-
-* pattern matching
-
-```
-✗ match a (string s) (print "it is s")
-```
-
-* module system
-
-```
-✓ require ./b
-```
-
-* a live reloading runtime
-
-```
-✓ print "being reloading"
-```
+BSD
