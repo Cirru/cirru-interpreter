@@ -1,4 +1,6 @@
 
+echo ==== basic data structures
+
 print $ number 3
 
 string x

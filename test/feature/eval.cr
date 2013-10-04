@@ -1,4 +1,6 @@
 
+echo ==== eval and code
+
 set c $ code
   print (number 1)
   print (get parent)
