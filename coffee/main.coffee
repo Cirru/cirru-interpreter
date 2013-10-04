@@ -45,9 +45,9 @@ exports.run = (scope, ast) ->
 
 exports.start = (srcpath) ->
   exports.run {}, (parse srcpath)
-  require('./prelude').reloading.on 'reload', ->
-    console.log '\n ... Reloading From File ... \n'
+  require('./prelude').reloading.on 'reload', (frompath) ->
+    console.log clc.xterm(3)("@@@ [Reloading] #{stringify frompath} @@@")
     exports.run {}, (parse srcpath)
 
   fs.watchFile srcpath, interval: 200, ->
-    require('./prelude').reloading.emit 'reload'
+    require('./prelude').reloading.emit 'reload', srcpath

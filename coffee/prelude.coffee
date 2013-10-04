@@ -176,7 +176,7 @@ exports.prelude =
     args.map (expression) -> be_type expression, 'array'
 
     parent: scope
-    list: args
+    ast: args
 
   eval: (scope, list) ->
     args = list[1..]
@@ -187,8 +187,10 @@ exports.prelude =
     child =
       parent: code.parent
       outer: scope
-    code.list.map (expression) ->
-      main.interpret child, expression
+    ret = no # not sure, but to return something
+    code.ast.map (expression) ->
+      ret = main.interpret child, expression
+    ret
 
   assert: (scope, list) ->
     args = list[1..]
@@ -241,6 +243,5 @@ exports.reloading = reloading = new EventEmitter
 
 watch_scope = (module_path) ->
   fs.watchFile module_path, interval: 200, ->
-    console.log 'reloading......'
     reload_scope()
-    reloading.emit 'reload'
+    reloading.emit 'reload', module_path
