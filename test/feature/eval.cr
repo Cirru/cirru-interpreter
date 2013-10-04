@@ -15,8 +15,9 @@ set pseudo-func $ code
   set b $ at parent $ at args $ number 2
   add a b
 
-
 set num-a $ number 3
 set num-b $ number 4
 
 print $ call pseudo-func num-a num-b
+
+pseudo-func num-a num-b

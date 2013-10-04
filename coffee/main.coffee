@@ -22,7 +22,7 @@ exports.interpret = interpret = (scope, list) ->
 
   func = list[0].text
   if scope[func]?
-    scope[func] scope, list
+    prelude.call scope, [null, list...]
   else if prelude[func]?
     prelude[func] scope, list
   else
