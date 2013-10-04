@@ -43,6 +43,12 @@ length_equal = (args, length) ->
 be_type = (x, a_type) ->
   assert ((type x) is a_type), "#{x} here should be a #{a_type}"
 
+check_numbers = (scope, list) ->
+  args = cirru_read scope, list[1..]
+  has_no_undefined args
+  args.map (x) -> be_type x, 'number'
+  args
+
 # prelude
 
 exports.prelude =
@@ -51,7 +57,7 @@ exports.prelude =
     length_equal args, 1
     x = args[0]
     be_type x.text, 'string'
-    number = parseInt x.text
+    number = Number x.text
     if isNaN number
       cirru_error x, "#{stringify x.text} is not valid number"
     else
@@ -239,11 +245,34 @@ exports.prelude =
     ms[module_path].exports
 
   add: (scope, list) ->
-    args = cirru_read scope, list[1..]
-    has_no_undefined args
+    args = check_numbers scope, list
     longer_than args, 1
-    args.map (x) -> be_type x, 'number'
     args.reduce ((x, y) -> x + y), 0
+
+  minus: (scope, list) ->
+    args = check_numbers scope, list
+    longer_than args, 1
+    args.reduce ((x, y) -> x - y), 0
+
+  multiply: (scope, list) ->
+    args = check_numbers scope, list
+    longer_than args, 1
+    args.reduce ((x, y) -> x * y), 0
+
+  divide: (scope, list) ->
+    args = check_numbers scope, list
+    longer_than args, 1
+    args.reduce ((x, y) -> x / y), 0
+
+  round: (scope, list) ->
+    args = check_numbers scope, list
+    x = args[0]
+    Math.round x
+
+  floor: (scope, list) ->
+    args = check_numbers scope, list
+    x = args[0]
+    Math.floor x
 
 ms = {}
 
