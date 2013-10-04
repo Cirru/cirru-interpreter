@@ -46,7 +46,9 @@ exports.run = (scope, ast) ->
 exports.start = (srcpath) ->
   exports.run {}, (parse srcpath)
   require('./prelude').reloading.on 'reload', (frompath) ->
-    console.log clc.xterm(3)("@@@ [Reloading] #{stringify frompath} @@@")
+    time = (new Date).toString().match(/\d+:\d+:\d+/)[0]
+    info = "✦✦✦✦ #{time} #{frompath} ✦✦✦✦"
+    console.log clc.xterm(3)(info)
     exports.run {}, (parse srcpath)
 
   fs.watchFile srcpath, interval: 200, ->

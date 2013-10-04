@@ -150,8 +150,7 @@ exports.prelude =
     print args...
 
   echo: (scope, list) ->
-    args = cirru_read scope, list[1..]
-    has_no_undefined args
+    args = list[1..]
     longer_than args, 0
     print args...
 
@@ -289,7 +288,9 @@ reload_scope = ->
 
 exports.reloading = reloading = new EventEmitter
 
+reloading.on 'reload', ->
+  reload_scope()
+
 watch_scope = (module_path) ->
   fs.watchFile module_path, interval: 200, ->
-    reload_scope()
     reloading.emit 'reload', module_path
