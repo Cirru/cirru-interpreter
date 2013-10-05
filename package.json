@@ -15,7 +15,8 @@
   "devDependencies": {
   },
   "scripts": {
-    "test": "node-dev coffee/command.coffee test/index.cr"
+    "test": "node-dev coffee/command.coffee test/index.cr",
+    "prepublish": "coffee -o lib/ -bcm coffee/"
   },
   "repository": {
     "type": "git",
