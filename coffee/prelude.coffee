@@ -166,7 +166,7 @@ exports.prelude =
 
   echo: (scope, list) ->
     args = list[1..]
-    args.map (x) -> be_type x.text, 'string'
+    args.map a_token
     longer_than args, 0
     print args.map((x) -> x.text).join(' ')
 
@@ -213,7 +213,7 @@ exports.prelude =
     args = list[1..]
     has_no_undefined args
     longer_than args, 0
-    args.map (expression) -> be_type expression, 'array'
+    args.map an_expression
 
     parent: scope
     ast: args
@@ -222,7 +222,7 @@ exports.prelude =
     args = list[1..]
     has_no_undefined args
     longer_than args, 0
-    args.map (expression) -> be_type expression, 'array'
+    args.map an_expression
     code = main.interpret scope, args[0]
     child =
       parent: code.parent
@@ -242,7 +242,7 @@ exports.prelude =
       print note
       assert no, "assert #{args[0]} equals #{args[1]} failed"
 
-  comment: (scope, list) ->
+  '--': (scope, list) ->
     # will return nothing
 
   equal: (scope, list) ->
@@ -317,15 +317,12 @@ exports.prelude =
 
 ms = {}
 
-reload_scope = ->
-  Object.keys(ms).map (module_path) ->
-    fs.unwatchFile module_path
-  ms = {}
-
 exports.reloading = reloading = new EventEmitter
 
 reloading.on 'reload', ->
-  reload_scope()
+  Object.keys(ms).map (module_path) ->
+    fs.unwatchFile module_path
+  ms = {}
 
 watch_scope = (module_path) ->
   fs.watchFile module_path, interval: 200, ->

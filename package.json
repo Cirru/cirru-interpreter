@@ -9,11 +9,9 @@
   "dependencies": {
     "cirru-parser": "~0.4.4",
     "coffee-pattern": "0.0.6",
-    "cli-color": "~0.2.2",
-    "moment": "~2.2.1"
+    "cli-color": "~0.2.2"
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "scripts": {
     "test": "node-dev coffee/command.coffee test/index.cr",
     "prepublish": "coffee -o lib/ -bcm coffee/"

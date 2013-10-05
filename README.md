@@ -16,7 +16,7 @@ npm install -g cirru-interpreter
 * comment
 
 ```
-✗ -- nothing
+✓ -- nothing
 ```
 
 * basic data types
