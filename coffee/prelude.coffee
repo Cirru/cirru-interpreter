@@ -294,6 +294,19 @@ exports.prelude =
     x = args[0]
     Math.floor x
 
+  # control flow
+
+  if: (scope, list) ->
+    args = list[1..]
+    x = args[0]
+    an_expression x
+    args.map an_expression
+    longer_than args, 1
+    condition = main.interpret scope, x
+    if condition then main.interpret scope, args[1]
+    else if args[2]? then main.interpret scope, args[2]
+    
+
 ms = {}
 
 reload_scope = ->

@@ -1,3 +1,16 @@
 
 echo ==== testing control flows
-echo Info:: control flow not implemented
+
+set a $ number 1
+set b $ number 2
+set c $ number 1
+
+if (equal a b)
+  echo a equals b
+  echo a not equals b
+
+if (equal a c)
+  echo a is c
+
+if (equal c b)
+  echo b is c
