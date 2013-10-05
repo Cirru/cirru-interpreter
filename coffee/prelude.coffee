@@ -58,6 +58,7 @@ an_expression = (xs) ->
 # prelude
 
 exports.prelude =
+  # data and structures
   number: (scope, list) ->
     args = list[1..]
     length_equal args, 1
@@ -209,6 +210,8 @@ exports.prelude =
     list[2..].map (expression) ->
       main.interpret child, expression
 
+  # code and eval
+
   code: (scope, list) ->
     args = list[1..]
     has_no_undefined args
@@ -223,11 +226,15 @@ exports.prelude =
     has_no_undefined args
     longer_than args, 0
     args.map an_expression
-    code = main.interpret scope, args[0]
+    x = args[0]
+    code =
+      if an_expression x then main.interpret scope, x
+      else if a_token x then scope[x.text]
+      else cirru_error x, 'not recognized'
     child =
       parent: code.parent
       outer: scope
-    ret = no # not sure, but to return something
+    ret = null
     code.ast.map (expression) ->
       ret = main.interpret child, expression
     ret
@@ -242,8 +249,12 @@ exports.prelude =
       print note
       assert no, "assert #{args[0]} equals #{args[1]} failed"
 
+  # comment
+
   '--': (scope, list) ->
     # will return nothing
+
+  # math
 
   equal: (scope, list) ->
     args = cirru_read scope, list[1..]

@@ -3,9 +3,9 @@ echo ==== eval and code
 
 set c $ code
   print (number 1)
-  print (get parent)
-  print (get outer)
 
-eval (get c)
+print $ eval c
 
-assert (equal (bool right) (bool yes)) (string "show print this")
+assert
+  equal (bool right) (bool yes)
+  string "show print this"

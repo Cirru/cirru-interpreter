@@ -1,12 +1,12 @@
 
 --
   require feature/control-flow.cr
-
-begin
   require feature/data.cr
 
---
+begin
   require feature/eval.cr
+
+--
   require feature/file.cr
   require feature/func.cr
   require feature/math.cr
