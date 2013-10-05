@@ -160,7 +160,7 @@ exports.prelude =
     has_no_undefined args
     longer_than args, 0
     args = args.map (x) ->
-      if x then x else 'nil'
+      if x? then x else 'nil'
     print args...
 
   echo: (scope, list) ->
@@ -305,7 +305,14 @@ exports.prelude =
     condition = main.interpret scope, x
     if condition then main.interpret scope, args[1]
     else if args[2]? then main.interpret scope, args[2]
-    
+
+  begin: (scope, list) ->
+    args = list[1..]
+    args.map an_expression
+    ret = null
+    args.map (x) ->
+      ret = main.interpret scope, x
+    ret
 
 ms = {}
 

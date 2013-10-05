@@ -14,3 +14,8 @@ if (equal a c)
 
 if (equal c b)
   echo b is c
+
+print $ begin
+  print (number 1)
+  string somthing
+  number 0
