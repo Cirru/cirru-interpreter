@@ -1,11 +1,11 @@
 
 comment
-
-begin
   require feature/control-flow.cr
 
-comment
+begin
   require feature/data.cr
+
+comment
   require feature/eval.cr
   require feature/file.cr
   require feature/func.cr

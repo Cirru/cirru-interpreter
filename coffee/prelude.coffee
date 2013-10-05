@@ -121,6 +121,7 @@ exports.prelude =
     else if a_token x then x = scope[x.text]
     if an_expression key then key = main.interpret scope, key
     else if a_token key then key = key.x
+    if (type key) is 'number' then key -= 1
     ret = x[key]
     assert (ret isnt undefined), "#{x}[#{key}] got undefined"
     ret
@@ -151,17 +152,17 @@ exports.prelude =
       scope[main.interpret scope, args[0]]
 
   print: (scope, list) ->
+    ret = null
     args = list[1..].map (x) ->
-      if (type x.text) is 'string' then scope[x]
-      else if (type x) is 'array'
-        ret = main.interpret scope, x
-        # console.log 'should main:::', ret, x
-        ret
+      if (type x.text) is 'string' then scope[x.text]
+      else if (type x) is 'array' then main.interpret scope, x
+      else cirru_error x, 'unexpected case'
     has_no_undefined args
     longer_than args, 0
     args = args.map (x) ->
       if x? then x else 'nil'
     print args...
+    ret
 
   echo: (scope, list) ->
     args = list[1..]
