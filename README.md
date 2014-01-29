@@ -25,7 +25,7 @@ I'm going to take a break, not so confident to finish it so far.
 
 ### Editor Support
 
-[Cirru.subl](https://github.com/jiyinyiyong/Cirru.subl)
+[sublime-cirru](https://github.com/jiyinyiyong/sublime-cirru)
 
 ### License
 
